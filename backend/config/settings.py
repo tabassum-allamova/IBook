@@ -183,3 +183,9 @@ DEFAULT_FROM_EMAIL = config("DEFAULT_FROM_EMAIL", default="noreply@ibook.app")
 # When SENDGRID_API_KEY is empty (local dev), fall back to console backend silently
 if not SENDGRID_API_KEY:
     EMAIL_BACKEND = "django.core.mail.backends.console.EmailBackend"
+
+# ---------------------------------------------------------------------------
+# Frontend URL — used in email verification links
+# ---------------------------------------------------------------------------
+
+FRONTEND_URL = config("FRONTEND_URL", default="http://localhost:3000")
