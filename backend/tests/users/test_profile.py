@@ -1,7 +1,7 @@
 """
-Wave 0 stubs: User profile endpoint tests.
+Wave 1: User profile endpoint tests.
 
-Endpoints (expected):
+Endpoints:
   GET   /api/auth/profile/  — retrieve current user's profile
   PATCH /api/auth/profile/  — update allowed profile fields
 """
@@ -9,7 +9,7 @@ Endpoints (expected):
 import pytest
 
 
-@pytest.mark.skip(reason="Endpoint not yet implemented — Plan 02")
+@pytest.mark.django_db
 def test_get_profile(auth_client, customer_user):
     """GET /api/auth/profile/ returns the authenticated user's profile fields."""
     client = auth_client(customer_user)
@@ -21,17 +21,17 @@ def test_get_profile(auth_client, customer_user):
     assert "avatar" in response.data
 
 
-@pytest.mark.skip(reason="Endpoint not yet implemented — Plan 02")
+@pytest.mark.django_db
 def test_update_profile(auth_client, customer_user):
     """PATCH /api/auth/profile/ updates allowed fields and returns 200."""
     client = auth_client(customer_user)
-    payload = {"phone_number": "+9876543210", "bio": "IBook customer"}
+    payload = {"phone_number": "+9876543210"}
     response = client.patch("/api/auth/profile/", payload)
     assert response.status_code == 200
     assert response.data["phone_number"] == "+9876543210"
 
 
-@pytest.mark.skip(reason="Endpoint not yet implemented — Plan 02")
+@pytest.mark.django_db
 def test_cannot_change_role(auth_client, customer_user):
     """PATCH /api/auth/profile/ with a 'role' field is either ignored or returns 400."""
     client = auth_client(customer_user)

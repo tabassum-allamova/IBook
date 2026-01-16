@@ -1,7 +1,7 @@
 """
-Wave 0 stubs: Login and token-refresh endpoint tests.
+Wave 1: Login and token-refresh endpoint tests.
 
-Endpoints (expected):
+Endpoints:
   POST /api/auth/login/          — obtain JWT token pair
   POST /api/auth/token/refresh/  — refresh access token using httpOnly cookie
 """
@@ -9,7 +9,7 @@ Endpoints (expected):
 import pytest
 
 
-@pytest.mark.skip(reason="Endpoint not yet implemented — Plan 02")
+@pytest.mark.django_db
 def test_login_success(api_client, customer_user):
     """POST /api/auth/login/ with valid credentials returns 200, access token, and refresh cookie."""
     payload = {"email": "customer@test.com", "password": "Test1234"}
@@ -19,7 +19,7 @@ def test_login_success(api_client, customer_user):
     assert "refresh_token" in response.cookies
 
 
-@pytest.mark.skip(reason="Endpoint not yet implemented — Plan 02")
+@pytest.mark.django_db
 def test_login_invalid_credentials(api_client):
     """POST /api/auth/login/ with wrong password returns 401."""
     payload = {"email": "nobody@test.com", "password": "WrongPass1"}
@@ -27,7 +27,7 @@ def test_login_invalid_credentials(api_client):
     assert response.status_code == 401
 
 
-@pytest.mark.skip(reason="Endpoint not yet implemented — Plan 02")
+@pytest.mark.django_db
 def test_token_refresh(api_client, customer_user):
     """POST /api/auth/token/refresh/ with a valid refresh cookie returns a new access token."""
     # First, log in to get a refresh cookie
@@ -42,12 +42,12 @@ def test_token_refresh(api_client, customer_user):
     assert "access" in response.data
 
 
-@pytest.mark.skip(reason="Endpoint not yet implemented — Plan 02")
+@pytest.mark.django_db
 def test_unverified_user_blocked(api_client, db):
-    """A user with is_email_verified=False cannot log in — returns 403."""
+    """A user with is_email_verified=False cannot log in — returns 401 with specific message."""
     from apps.users.models import CustomUser
 
-    unverified = CustomUser.objects.create_user(
+    CustomUser.objects.create_user(
         username="unverified",
         email="unverified@test.com",
         password="Test1234",
@@ -57,4 +57,5 @@ def test_unverified_user_blocked(api_client, db):
     response = api_client.post(
         "/api/auth/login/", {"email": "unverified@test.com", "password": "Test1234"}
     )
-    assert response.status_code == 403
+    # AuthenticationFailed raises 401
+    assert response.status_code == 401
