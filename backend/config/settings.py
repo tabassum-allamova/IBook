@@ -173,15 +173,19 @@ SIMPLE_JWT = {
 }
 
 # ---------------------------------------------------------------------------
-# Email — SendGrid backend
+# Email — Gmail SMTP with App Password
 # ---------------------------------------------------------------------------
 
-EMAIL_BACKEND = "sendgrid_backend.SendgridBackend"
-SENDGRID_API_KEY = config("SENDGRID_API_KEY", default="")
-DEFAULT_FROM_EMAIL = config("DEFAULT_FROM_EMAIL", default="noreply@ibook.app")
+EMAIL_BACKEND = "django.core.mail.backends.smtp.EmailBackend"
+EMAIL_HOST = "smtp.gmail.com"
+EMAIL_PORT = 587
+EMAIL_USE_TLS = True
+EMAIL_HOST_USER = config("EMAIL_HOST_USER", default="")
+EMAIL_HOST_PASSWORD = config("EMAIL_HOST_PASSWORD", default="")
+DEFAULT_FROM_EMAIL = config("DEFAULT_FROM_EMAIL", default="")
 
-# When SENDGRID_API_KEY is empty (local dev), fall back to console backend silently
-if not SENDGRID_API_KEY:
+# When no email credentials configured, fall back to console backend (local dev)
+if not EMAIL_HOST_USER or not EMAIL_HOST_PASSWORD:
     EMAIL_BACKEND = "django.core.mail.backends.console.EmailBackend"
 
 # ---------------------------------------------------------------------------
