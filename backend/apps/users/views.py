@@ -39,16 +39,23 @@ _REFRESH_MAX_AGE = 60 * 60 * 24 * 7  # 7 days in seconds
 
 
 def _send_verification_email(user: CustomUser) -> None:
-    """Sign the user PK and email a verification link."""
+    """Sign the user PK and email a verification link. Runs in a thread to avoid blocking."""
+    import threading
+
     token = _signer.sign(user.pk)
-    verify_url = f"{settings.FRONTEND_URL}/verify-email?token={token}"
-    send_mail(
-        subject="Verify your IBook account",
-        message=f"Click to verify your email: {verify_url}",
-        from_email="noreply@ibook.app",
-        recipient_list=[user.email],
-        fail_silently=False,
-    )
+    # Link goes directly to Django API which verifies and redirects to login
+    verify_url = f"http://localhost:8000/api/auth/verify-email/?token={token}"
+
+    def _send():
+        send_mail(
+            subject="Verify your IBook account",
+            message=f"Click to verify your email: {verify_url}",
+            from_email=settings.DEFAULT_FROM_EMAIL,
+            recipient_list=[user.email],
+            fail_silently=True,
+        )
+
+    threading.Thread(target=_send, daemon=True).start()
 
 
 def _set_refresh_cookie(response: Response, refresh_token: str) -> None:
@@ -140,7 +147,9 @@ class VerifyEmailView(APIView):
         user.is_active = True
         user.is_email_verified = True
         user.save(update_fields=["is_active", "is_email_verified"])
-        return Response({"detail": "Email verified successfully."}, status=status.HTTP_200_OK)
+        # Redirect to frontend login page with success message
+        from django.shortcuts import redirect
+        return redirect(f"{settings.FRONTEND_URL}/login?verified=true")
 
 
 # ---------------------------------------------------------------------------
