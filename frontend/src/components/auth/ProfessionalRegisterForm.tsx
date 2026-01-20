@@ -102,6 +102,9 @@ export function ProfessionalRegisterForm() {
   return (
     <div className="space-y-8">
       <div>
+        <Link href="/" className="text-sm text-ibook-brown-500 hover:text-ibook-brown-700 inline-flex items-center gap-1 mb-4">
+          ← Back to home
+        </Link>
         <h2 className="text-3xl font-bold text-ibook-brown-900">Join as a Professional</h2>
         <p className="mt-2 text-ibook-brown-500">Create your IBook professional account</p>
       </div>

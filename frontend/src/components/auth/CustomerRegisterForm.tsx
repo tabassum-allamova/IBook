@@ -97,6 +97,9 @@ export function CustomerRegisterForm() {
   return (
     <div className="space-y-8">
       <div>
+        <Link href="/" className="text-sm text-ibook-brown-500 hover:text-ibook-brown-700 inline-flex items-center gap-1 mb-4">
+          ← Back to home
+        </Link>
         <h2 className="text-3xl font-bold text-ibook-brown-900">Create your account</h2>
         <p className="mt-2 text-ibook-brown-500">Join IBook as a customer</p>
       </div>
