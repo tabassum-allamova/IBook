@@ -73,7 +73,7 @@ function SettingsContent() {
       phone_number: '',
       avatar: '',
       bio: '',
-      years_of_experience: undefined,
+      years_of_experience: '',
     },
   })
 
