@@ -45,8 +45,12 @@ class CustomerRegisterSerializer(serializers.Serializer):
     phone_number = serializers.CharField(max_length=20, required=False, allow_blank=True)
 
     def validate_email(self, value: str) -> str:
-        if CustomUser.objects.filter(email__iexact=value).exists():
-            raise serializers.ValidationError("Email already registered.")
+        existing = CustomUser.objects.filter(email__iexact=value).first()
+        if existing:
+            if not existing.is_email_verified:
+                existing.delete()
+            else:
+                raise serializers.ValidationError("Email already registered.")
         return value.lower()
 
     def validate_password(self, value: str) -> str:
@@ -80,8 +84,12 @@ class ProfessionalRegisterSerializer(serializers.Serializer):
     phone_number = serializers.CharField(max_length=20, required=False, allow_blank=True)
 
     def validate_email(self, value: str) -> str:
-        if CustomUser.objects.filter(email__iexact=value).exists():
-            raise serializers.ValidationError("Email already registered.")
+        existing = CustomUser.objects.filter(email__iexact=value).first()
+        if existing:
+            if not existing.is_email_verified:
+                existing.delete()
+            else:
+                raise serializers.ValidationError("Email already registered.")
         return value.lower()
 
     def validate_password(self, value: str) -> str:
