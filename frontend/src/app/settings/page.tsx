@@ -128,7 +128,7 @@ function SettingsContent() {
   }
 
   return (
-    <div className="max-w-2xl mx-auto py-10 px-4">
+    <div className="max-w-3xl mx-auto py-10 px-6 w-full">
       <div className="mb-8">
         <h1 className="text-3xl font-bold text-ibook-brown-900">Settings</h1>
         <p className="mt-1 text-ibook-brown-500">Manage your profile information</p>
