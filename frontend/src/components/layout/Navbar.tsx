@@ -48,7 +48,7 @@ function NavbarContent() {
             </span>
           )}
           <Link
-            href="/settings"
+            href="/customer/settings"
             className="text-sm text-ibook-brown-700 hover:text-ibook-brown-900 transition-colors"
           >
             Settings

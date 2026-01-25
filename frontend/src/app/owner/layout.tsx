@@ -4,7 +4,7 @@ const OWNER_NAV = [
   { href: '/owner/overview', label: 'Shop Overview' },
   { href: '/owner/barbers', label: 'Barbers' },
   { href: '/owner/analytics', label: 'Analytics' },
-  { href: '/settings', label: 'Settings' },
+  { href: '/owner/settings', label: 'Settings' },
 ]
 
 export default function OwnerLayout({ children }: { children: React.ReactNode }) {

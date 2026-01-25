@@ -3,7 +3,7 @@ import { Sidebar } from '@/components/layout/Sidebar'
 const BARBER_NAV = [
   { href: '/barber/dashboard', label: 'Appointments' },
   { href: '/barber/availability', label: 'Availability' },
-  { href: '/settings', label: 'Settings' },
+  { href: '/barber/settings', label: 'Settings' },
 ]
 
 export default function BarberLayout({ children }: { children: React.ReactNode }) {
