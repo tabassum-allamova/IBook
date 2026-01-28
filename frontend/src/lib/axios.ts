@@ -1,65 +1,87 @@
 import axios from 'axios'
-import { useAuthStore } from '@/stores/authStore'
+import Cookies from 'js-cookie'
+import type { useAuthStore } from '@/stores/auth'
 
-export const api = axios.create({
-  baseURL: process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000',
-  withCredentials: true, // sends httpOnly refresh cookie
+type AuthStore = ReturnType<typeof useAuthStore>
+
+// Lazily injected to avoid circular dep (store imports nothing; axios is imported by store indirectly)
+let _store: AuthStore | null = null
+
+export function initAxiosStore(getStore: () => AuthStore) {
+  // Call getter once pinia is ready
+  _store = getStore()
+}
+
+const api = axios.create({
+  baseURL: '/',
+  withCredentials: true, // send httpOnly refresh_token cookie
 })
 
-// Attach access token to every request from Zustand store
+// Shared refresh promise to deduplicate concurrent refresh calls
+let refreshPromise: Promise<string> | null = null
+
+async function doRefresh(): Promise<string> {
+  if (refreshPromise) return refreshPromise
+
+  refreshPromise = axios
+    .post<{ access: string }>(
+      '/api/auth/token/refresh/',
+      {},
+      { withCredentials: true },
+    )
+    .then((res) => {
+      const newToken = res.data.access
+      if (_store) {
+        // Update token in store directly (triggers the watcher for persistence)
+        _store.accessToken = newToken
+      }
+      Cookies.set('access_token', newToken, { sameSite: 'strict' })
+      return newToken
+    })
+    .finally(() => {
+      refreshPromise = null
+    })
+
+  return refreshPromise
+}
+
+// Request interceptor: attach Bearer token
 api.interceptors.request.use((config) => {
-  const token = useAuthStore.getState().accessToken
+  const token = _store?.accessToken
   if (token) {
-    config.headers.Authorization = `Bearer ${token}`
+    config.headers = config.headers ?? {}
+    config.headers['Authorization'] = `Bearer ${token}`
   }
   return config
 })
 
-// Refresh lock — prevents multiple concurrent refresh calls (Pitfall 4 fix)
-let refreshPromise: Promise<string> | null = null
-
-// Handle 401 — try silent refresh, then retry original request once
+// Response interceptor: handle 401 → refresh → retry
 api.interceptors.response.use(
   (response) => response,
   async (error) => {
-    const original = error.config
-    if (error.response?.status === 401 && !original._retry) {
-      original._retry = true
+    const originalRequest = error.config as typeof error.config & { _retry?: boolean }
+
+    if (error.response?.status === 401 && !originalRequest._retry) {
+      originalRequest._retry = true
 
       try {
-        // Deduplicate concurrent 401s with a shared refresh promise lock
-        if (!refreshPromise) {
-          refreshPromise = axios
-            .post<{ access: string }>(
-              `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'}/api/auth/token/refresh/`,
-              {},
-              { withCredentials: true }
-            )
-            .then((res) => res.data.access)
-            .finally(() => {
-              refreshPromise = null
-            })
-        }
-
-        const newAccessToken = await refreshPromise
-
-        // Update store with new access token
-        const { user } = useAuthStore.getState()
-        if (user) {
-          useAuthStore.getState().setAuth(user, newAccessToken)
-        }
-
-        // Retry original request with new token
-        original.headers.Authorization = `Bearer ${newAccessToken}`
-        return api(original)
+        const newToken = await doRefresh()
+        originalRequest.headers = originalRequest.headers ?? {}
+        originalRequest.headers['Authorization'] = `Bearer ${newToken}`
+        return api(originalRequest)
       } catch {
         // Refresh failed — clear auth and redirect to login
-        useAuthStore.getState().clearAuth()
-        if (typeof window !== 'undefined') {
-          window.location.href = '/login'
+        if (_store) {
+          _store.clearAuth()
         }
+        Cookies.remove('access_token')
+        window.location.href = '/login'
+        return Promise.reject(error)
       }
     }
+
     return Promise.reject(error)
-  }
+  },
 )
+
+export default api
