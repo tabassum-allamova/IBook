@@ -37,16 +37,16 @@ import { RouterLink } from 'vue-router'
       </p>
 
       <!-- CTA buttons -->
-      <div class="flex flex-col sm:flex-row gap-4 w-full max-w-sm">
+      <div class="flex flex-col sm:flex-row gap-4 w-full max-w-md">
         <RouterLink
           to="/register/customer"
-          class="flex-1 py-4 px-6 bg-ibook-brown-800 hover:bg-ibook-brown-700 text-white font-semibold rounded-xl text-center transition-colors shadow-md"
+          class="flex-1 inline-flex items-center justify-center py-4 px-8 bg-ibook-brown-800 hover:bg-ibook-brown-700 text-white font-semibold rounded-xl text-center transition-colors shadow-md"
         >
           I'm a Customer
         </RouterLink>
         <RouterLink
           to="/register/professional"
-          class="flex-1 py-4 px-6 bg-white hover:bg-ibook-brown-50 text-ibook-brown-800 font-semibold rounded-xl text-center transition-colors shadow-md border-2 border-ibook-brown-200 hover:border-ibook-brown-400"
+          class="flex-1 inline-flex items-center justify-center py-4 px-8 bg-white hover:bg-ibook-brown-50 text-ibook-brown-800 font-semibold rounded-xl text-center transition-colors shadow-md border-2 border-ibook-brown-200 hover:border-ibook-brown-400"
         >
           I'm a Barber / Shop Owner
         </RouterLink>
