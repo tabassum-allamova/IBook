@@ -25,7 +25,7 @@ async function logout() {
 </script>
 
 <template>
-  <aside class="w-64 min-h-screen bg-ibook-brown-900 text-white flex flex-col shadow-xl">
+  <aside class="w-64 h-full bg-ibook-brown-900 text-white flex flex-col shadow-xl shrink-0">
     <!-- Logo -->
     <div class="px-6 py-6 border-b border-ibook-brown-700">
       <span class="text-2xl font-black tracking-tight text-ibook-gold-400">IBook</span>

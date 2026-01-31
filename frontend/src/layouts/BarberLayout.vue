@@ -9,9 +9,9 @@ const navItems = [
 </script>
 
 <template>
-  <div class="min-h-screen bg-ibook-cream flex">
+  <div class="h-screen bg-ibook-cream flex overflow-hidden">
     <Sidebar :nav-items="navItems" />
-    <main class="flex-1 overflow-auto">
+    <main class="flex-1 overflow-y-auto p-8">
       <slot />
     </main>
   </div>
