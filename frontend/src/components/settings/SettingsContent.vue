@@ -9,7 +9,7 @@ interface ProfileData {
   email: string
   full_name: string
   phone_number?: string
-  avatar_url?: string
+  avatar?: string
   role: string
   bio?: string
   years_of_experience?: number
@@ -42,7 +42,7 @@ watch(profile, (p) => {
   if (p) {
     form.fullName = p.full_name ?? ''
     form.phone = p.phone_number ?? ''
-    form.avatarUrl = p.avatar_url ?? ''
+    form.avatarUrl = p.avatar ?? ''
     form.bio = p.bio ?? ''
     form.yearsOfExperience = p.years_of_experience ?? ''
   }
@@ -50,11 +50,13 @@ watch(profile, (p) => {
 
 const { mutate: saveProfile, isPending: isSaving } = useMutation({
   mutationFn: async () => {
+    const nameParts = form.fullName.trim().split(' ', 2)
     const payload: Record<string, unknown> = {
-      full_name: form.fullName,
+      first_name: nameParts[0] || '',
+      last_name: nameParts[1] || '',
     }
     if (form.phone !== undefined) payload.phone_number = form.phone || null
-    if (form.avatarUrl !== undefined) payload.avatar_url = form.avatarUrl || null
+    if (form.avatarUrl !== undefined) payload.avatar = form.avatarUrl || null
 
     const isBarber = auth.user?.role === 'BARBER'
     if (isBarber) {
