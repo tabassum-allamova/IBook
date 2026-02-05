@@ -3,6 +3,8 @@ Shared pytest fixtures for the IBook backend test suite.
 
 Wave 0: Fixtures define users and API clients that all subsequent test waves will use.
 The fixtures create real DB rows so they exercise the CustomUser model.
+
+Phase 2 additions: shop_fixture stub — skipped until Plan 02-02 creates the Shop model.
 """
 
 import pytest
@@ -87,3 +89,20 @@ def shop_owner_user(db) -> CustomUser:
         is_active=True,
     )
     return user
+
+
+# ---------------------------------------------------------------------------
+# Phase 2 fixtures — shop_fixture is a stub until Plan 02-02 creates the model
+# ---------------------------------------------------------------------------
+
+
+@pytest.fixture
+def shop_fixture(db, shop_owner_user):
+    """
+    Stub fixture — skipped until Plan 02-02 implements the Shop model.
+
+    Once the shops app is installed, replace this stub with:
+        from apps.shops.models import Shop
+        return Shop.objects.create(owner=shop_owner_user, name='Test Shop', ...)
+    """
+    pytest.skip("shop_fixture requires shops app (implemented in Plan 02-02)")
