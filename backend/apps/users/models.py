@@ -26,7 +26,7 @@ class CustomUser(AbstractUser):
     )
     is_email_verified = models.BooleanField(default=False)
     phone_number = models.CharField(max_length=20, blank=True)
-    avatar = models.URLField(blank=True)
+    avatar = models.ImageField(upload_to='users/avatars/', blank=True)
     bio = models.TextField(blank=True)
     years_of_experience = models.PositiveSmallIntegerField(null=True, blank=True)
 
