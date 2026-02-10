@@ -18,6 +18,7 @@ from django.core.mail import send_mail
 from django.core.signing import BadSignature, SignatureExpired, TimestampSigner
 from rest_framework import status
 from rest_framework.generics import RetrieveUpdateAPIView
+from rest_framework.parsers import FormParser, MultiPartParser
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.request import Request
 from rest_framework.response import Response
@@ -298,6 +299,7 @@ class ProfileView(RetrieveUpdateAPIView):
     """GET/PATCH /api/auth/profile/ — read or update the authenticated user's profile."""
 
     permission_classes = [IsAuthenticated]
+    parser_classes = [MultiPartParser, FormParser]
     serializer_class = UserProfileSerializer
 
     def get_object(self) -> CustomUser:
