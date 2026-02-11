@@ -99,10 +99,17 @@ def shop_owner_user(db) -> CustomUser:
 @pytest.fixture
 def shop_fixture(db, shop_owner_user):
     """
-    Stub fixture — skipped until Plan 02-02 implements the Shop model.
+    Real fixture — creates a Shop row for the shop_owner_user.
 
-    Once the shops app is installed, replace this stub with:
-        from apps.shops.models import Shop
-        return Shop.objects.create(owner=shop_owner_user, name='Test Shop', ...)
+    Implemented in Plan 02-02 (shops app). Replaces the stub that called pytest.skip().
     """
-    pytest.skip("shop_fixture requires shops app (implemented in Plan 02-02)")
+    from apps.shops.models import Shop
+
+    return Shop.objects.create(
+        owner=shop_owner_user,
+        name='Test Barbershop',
+        address='1 Main St',
+        lat='41.299496',
+        lng='69.240073',
+        description='A fixture shop for testing',
+    )

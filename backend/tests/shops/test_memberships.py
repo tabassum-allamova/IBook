@@ -22,6 +22,9 @@ def test_owner_adds_barber(auth_client, shop_owner_user, barber_user, shop_fixtu
 @pytest.mark.django_db
 def test_owner_removes_barber(auth_client, shop_owner_user, barber_user, shop_fixture):
     """Shop owner can DELETE /api/shops/{id}/members/{barber_id}/ → 204."""
+    from apps.shops.models import BarberShopMembership
+    # Pre-create the membership so there is something to delete
+    BarberShopMembership.objects.create(shop=shop_fixture, barber=barber_user)
     client = auth_client(shop_owner_user)
     response = client.delete(
         f'/api/shops/{shop_fixture.id}/members/{barber_user.id}/',

@@ -35,3 +35,22 @@ def test_customer_cannot_create_shop(auth_client, customer_user):
     }
     response = client.post('/api/shops/', payload, format='json')
     assert response.status_code == 403
+
+
+@pytest.mark.django_db
+def test_owner_gets_own_shop(auth_client, shop_owner_user, shop_fixture):
+    """Shop owner can GET /api/shops/my/ and receive their shop data with 200."""
+    client = auth_client(shop_owner_user)
+    response = client.get('/api/shops/my/')
+    assert response.status_code == 200
+    assert response.data['id'] == shop_fixture.id
+    assert response.data['name'] == shop_fixture.name
+    assert 'hours' in response.data
+
+
+@pytest.mark.django_db
+def test_owner_my_shop_no_shop(auth_client, shop_owner_user):
+    """GET /api/shops/my/ returns 404 when owner has no shop yet."""
+    client = auth_client(shop_owner_user)
+    response = client.get('/api/shops/my/')
+    assert response.status_code == 404
