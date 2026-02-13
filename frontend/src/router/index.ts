@@ -86,6 +86,20 @@ const routes: RouteRecordRaw[] = [
     meta: { requiresAuth: true, role: 'SHOP_OWNER' as UserRole },
   },
 
+  // Shop Owner shop routes
+  {
+    path: '/owner/shop/setup',
+    name: 'owner-shop-setup',
+    component: () => import('@/views/owner/ShopSetupPage.vue'),
+    meta: { requiresAuth: true, role: 'SHOP_OWNER' as UserRole },
+  },
+  {
+    path: '/owner/shop',
+    name: 'owner-shop',
+    component: () => import('@/views/owner/ShopManagePage.vue'),
+    meta: { requiresAuth: true, role: 'SHOP_OWNER' as UserRole },
+  },
+
   // Catch-all
   {
     path: '/:pathMatch(.*)*',
