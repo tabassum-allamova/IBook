@@ -61,6 +61,24 @@ const routes: RouteRecordRaw[] = [
     meta: { requiresAuth: true, role: 'BARBER' as UserRole },
   },
   {
+    path: '/barber/profile',
+    name: 'barber-profile',
+    component: () => import('@/views/barber/ProfileSetupPage.vue'),
+    meta: { requiresAuth: true, role: 'BARBER' as UserRole },
+  },
+  {
+    path: '/barber/services',
+    name: 'barber-services',
+    component: () => import('@/views/barber/ServicesPage.vue'),
+    meta: { requiresAuth: true, role: 'BARBER' as UserRole },
+  },
+  {
+    path: '/barber/availability',
+    name: 'barber-availability',
+    component: () => import('@/views/barber/AvailabilityPage.vue'),
+    meta: { requiresAuth: true, role: 'BARBER' as UserRole },
+  },
+  {
     path: '/barber/settings',
     name: 'barber-settings',
     component: () => import('@/views/barber/SettingsPage.vue'),
