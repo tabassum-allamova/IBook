@@ -3,7 +3,7 @@ import Sidebar from '@/components/layout/Sidebar.vue'
 
 const navItems = [
   { label: 'Shop Overview', to: '/owner/overview' },
-  { label: 'Barbers', to: '/owner/barbers' },
+  { label: 'My Shop', to: '/owner/shop' },
   { label: 'Analytics', to: '/owner/analytics' },
   { label: 'Settings', to: '/owner/settings' },
 ]

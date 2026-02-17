@@ -150,7 +150,6 @@ async function handleSubmit() {
   }
 }
 
-const progressPercent = () => ((currentStep.value - 1) / (totalSteps - 1)) * 100
 </script>
 
 <template>
