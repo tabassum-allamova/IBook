@@ -9,6 +9,7 @@ Registers two groups (included from config/urls.py):
 from django.urls import path
 from .views import (
     ServiceListCreateView,
+    ServiceDetailView,
     ServiceReorderView,
     WeeklyScheduleView,
     DateBlockListCreateView,
@@ -18,6 +19,7 @@ from .views import (
 # Patterns under api/services/
 services_urlpatterns = [
     path('reorder/', ServiceReorderView.as_view(), name='service-reorder'),
+    path('<int:pk>/', ServiceDetailView.as_view(), name='service-detail'),
     path('', ServiceListCreateView.as_view(), name='service-list-create'),
 ]
 

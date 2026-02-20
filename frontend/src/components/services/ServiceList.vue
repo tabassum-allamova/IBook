@@ -30,7 +30,7 @@ function formatUZS(amount: number): string {
 
 const reorderMutation = useMutation({
   mutationFn: async (order: Array<{ id: number; sort_order: number }>) => {
-    await api.patch('/api/services/reorder/', { order })
+    await api.patch('/api/services/reorder/', order)
   },
 })
 

@@ -45,6 +45,37 @@ class ServiceListCreateView(APIView):
         return Response(serializer.data, status=status.HTTP_201_CREATED)
 
 
+class ServiceDetailView(APIView):
+    """
+    PATCH  /api/services/<pk>/ — update a service (barber must own it)
+    DELETE /api/services/<pk>/ — delete a service (barber must own it)
+    """
+
+    permission_classes = [IsBarber]
+
+    def _get_service(self, request, pk):
+        try:
+            return Service.objects.get(pk=pk, barber=request.user)
+        except Service.DoesNotExist:
+            return None
+
+    def patch(self, request: Request, pk: int) -> Response:
+        service = self._get_service(request, pk)
+        if not service:
+            return Response({'detail': 'Service not found.'}, status=status.HTTP_404_NOT_FOUND)
+        serializer = ServiceSerializer(service, data=request.data, partial=True)
+        serializer.is_valid(raise_exception=True)
+        serializer.save()
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
+    def delete(self, request: Request, pk: int) -> Response:
+        service = self._get_service(request, pk)
+        if not service:
+            return Response({'detail': 'Service not found.'}, status=status.HTTP_404_NOT_FOUND)
+        service.delete()
+        return Response(status=status.HTTP_204_NO_CONTENT)
+
+
 class ServiceReorderView(APIView):
     """
     PATCH /api/services/reorder/ — bulk-update sort_order for the barber's services.
