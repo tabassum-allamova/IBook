@@ -115,11 +115,17 @@ class ShopPhotoView(APIView):
         shop = get_object_or_404(Shop, pk=shop_id)
         if shop.owner != request.user:
             return Response({'detail': 'You do not own this shop.'}, status=403)
-        if shop.photos.count() >= 5:
-            return Response({'error': 'Max 5 photos allowed per shop.'}, status=400)
-        serializer = ShopPhotoSerializer(data=request.data, context={'request': request})
-        serializer.is_valid(raise_exception=True)
-        serializer.save(shop=shop)
+        files = request.FILES.getlist('image')
+        if not files:
+            return Response({'error': 'No image files provided.'}, status=400)
+        current_count = shop.photos.count()
+        if current_count + len(files) > 5:
+            return Response({'error': f'Max 5 photos. You have {current_count}, trying to add {len(files)}.'}, status=400)
+        created = []
+        for f in files:
+            photo = ShopPhoto.objects.create(shop=shop, image=f)
+            created.append(photo)
+        serializer = ShopPhotoSerializer(created, many=True, context={'request': request})
         return Response(serializer.data, status=201)
 
     def delete(self, request, shop_id, photo_id):
