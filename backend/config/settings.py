@@ -52,6 +52,7 @@ INSTALLED_APPS = [
     "apps.users",
     "apps.shops",
     "apps.services",
+    "apps.bookings",
 ]
 
 # ---------------------------------------------------------------------------
