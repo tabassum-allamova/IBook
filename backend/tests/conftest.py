@@ -113,3 +113,47 @@ def shop_fixture(db, shop_owner_user):
         lng='69.240073',
         description='A fixture shop for testing',
     )
+
+
+# ---------------------------------------------------------------------------
+# Phase 3 fixtures — booking-related helpers
+# ---------------------------------------------------------------------------
+
+
+@pytest.fixture
+def barber_with_schedule(db, barber_user, shop_fixture):
+    """Barber with a shop membership and Mon-Fri 09:00-18:00 schedule, break 13:00-14:00."""
+    from apps.shops.models import BarberShopMembership
+    from apps.services.models import WeeklySchedule
+
+    BarberShopMembership.objects.create(shop=shop_fixture, barber=barber_user)
+    for day in range(5):  # Mon-Fri
+        WeeklySchedule.objects.update_or_create(
+            barber=barber_user, day_of_week=day,
+            defaults={
+                'is_working': True,
+                'start_time': '09:00',
+                'end_time': '18:00',
+                'break_start': '13:00',
+                'break_end': '14:00',
+            },
+        )
+    for day in range(5, 7):  # Sat-Sun off
+        WeeklySchedule.objects.update_or_create(
+            barber=barber_user, day_of_week=day,
+            defaults={'is_working': False},
+        )
+    return barber_user
+
+
+@pytest.fixture
+def service_fixture(db, barber_user):
+    """A 30-minute service at 50000 UZS for the barber_user."""
+    from apps.services.models import Service
+
+    return Service.objects.create(
+        barber=barber_user,
+        name='Haircut',
+        price=50000,
+        duration_minutes=30,
+    )
