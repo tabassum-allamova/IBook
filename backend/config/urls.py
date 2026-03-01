@@ -25,6 +25,8 @@ urlpatterns = [
     # Services and availability (Phase 2)
     path("api/services/", include((services_urlpatterns, "services"))),
     path("api/availability/", include((availability_urlpatterns, "availability"))),
+    # Bookings (Phase 3)
+    path("api/bookings/", include("apps.bookings.urls")),
     # Phase 1 stubs — will be replaced by full app url configs in Phase 3
     path("api/barbers/dashboard/", BarberDashboardStubView.as_view(), name="barbers-dashboard"),
     path("api/shops/dashboard/", ShopOwnerDashboardStubView.as_view(), name="shops-dashboard"),
