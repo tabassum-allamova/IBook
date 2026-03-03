@@ -42,6 +42,12 @@ const routes: RouteRecordRaw[] = [
     meta: { requiresAuth: true, role: 'CUSTOMER' as UserRole },
   },
   {
+    path: '/customer/appointments',
+    name: 'customer-appointments',
+    component: () => import('@/views/customer/AppointmentsPage.vue'),
+    meta: { requiresAuth: true, role: 'CUSTOMER' as UserRole },
+  },
+  {
     path: '/customer/settings',
     name: 'customer-settings',
     component: () => import('@/views/customer/SettingsPage.vue'),
