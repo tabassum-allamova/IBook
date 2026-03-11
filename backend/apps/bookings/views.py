@@ -48,7 +48,7 @@ class BarberServicesPublicView(APIView):
 
         try:
             barber_id = int(barber_id)
-            barber = CustomUser.objects.get(pk=barber_id, role='BARBER')
+            barber = CustomUser.objects.get(pk=barber_id, role=CustomUser.Role.BARBER)
         except (ValueError, CustomUser.DoesNotExist):
             return Response(
                 {'detail': 'Barber not found.'},
@@ -199,7 +199,7 @@ class BookingCreateView(APIView):
 
         # Validate barber exists
         try:
-            barber = CustomUser.objects.get(pk=barber_id, role='BARBER')
+            barber = CustomUser.objects.get(pk=barber_id, role=CustomUser.Role.BARBER)
         except CustomUser.DoesNotExist:
             return Response(
                 {'detail': 'Barber not found.'},

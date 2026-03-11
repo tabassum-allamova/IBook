@@ -24,7 +24,7 @@ const barberIdNum = computed(() => Number(props.barberId))
 // Wizard state
 const step = ref(1)
 const selectedServices = ref<Service[]>([])
-const selectedDate = ref('')
+const selectedDate = ref(new Date().toISOString().split('T')[0])
 const selectedSlot = ref('')
 const bookingResult = ref<AppointmentResult | null>(null)
 const paymentError = ref('')
@@ -108,7 +108,7 @@ watch(
 // Booking mutation
 const bookMutation = useMutation({
   mutationFn: (payload: {
-    barber: number
+    barber_id: number
     date: string
     start_time: string
     service_ids: number[]
@@ -147,7 +147,7 @@ function handlePayment(data: {
 }) {
   paymentError.value = ''
   bookMutation.mutate({
-    barber: barberIdNum.value,
+    barber_id: barberIdNum.value,
     date: selectedDate.value,
     start_time: selectedSlot.value,
     service_ids: selectedServiceIds.value,

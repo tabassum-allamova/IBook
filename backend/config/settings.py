@@ -124,7 +124,7 @@ AUTH_PASSWORD_VALIDATORS = [
 # ---------------------------------------------------------------------------
 
 LANGUAGE_CODE = "en-us"
-TIME_ZONE = "UTC"
+TIME_ZONE = "Asia/Tashkent"
 USE_I18N = True
 USE_TZ = True
 
@@ -202,4 +202,4 @@ if not EMAIL_HOST_USER or not EMAIL_HOST_PASSWORD:
 # Frontend URL — used in email verification links
 # ---------------------------------------------------------------------------
 
-FRONTEND_URL = config("FRONTEND_URL", default="http://localhost:3000")
+FRONTEND_URL = config("FRONTEND_URL", default="http://localhost:5173")

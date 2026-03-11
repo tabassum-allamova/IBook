@@ -108,7 +108,7 @@ watch(selectedServices, (val) => {
       <!-- Summary bar -->
       <div
         v-if="selectedServices.length > 0"
-        class="mt-4 p-3 rounded-xl bg-ibook-brown-800 text-white text-sm flex items-center justify-between"
+        class="mt-4 p-3 rounded-xl bg-ibook-brown-50 border border-ibook-brown-200 text-ibook-brown-700 text-sm flex items-center justify-between"
       >
         <span>{{ selectedServices.length }} service{{ selectedServices.length > 1 ? 's' : '' }} selected</span>
         <span>

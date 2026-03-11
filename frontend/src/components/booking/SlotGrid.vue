@@ -34,7 +34,7 @@ const emit = defineEmits<{
         class="px-4 py-2 rounded-lg text-sm transition-colors cursor-pointer"
         :class="
           slot === selected
-            ? 'bg-ibook-gold-400 text-ibook-brown-800 font-bold'
+            ? 'bg-ibook-brown-800 text-white font-bold'
             : 'bg-white border border-ibook-brown-200 hover:border-ibook-gold-400 text-ibook-brown-700'
         "
         @click="emit('select', slot)"
