@@ -52,14 +52,17 @@ async function handleReschedule(appointment: AppointmentData) {
     queryClient.invalidateQueries({ queryKey: ['appointments'] })
 
     const serviceIds = appointment.services
-      .map((_s, _i) => '') // We don't have service IDs in the snapshot, pass names for pre-selection
+      .map((s) => s.service_id)
+      .filter((id): id is number => id !== null)
       .join(',')
 
-    // Navigate to booking page with barber pre-selected
-    // The barber PK comes from appointment.barber
+    // Navigate to booking page with barber pre-selected and services for pre-selection
     router.push({
       path: `/customer/book/${appointment.barber}`,
-      query: { reschedule: 'true' },
+      query: {
+        reschedule: 'true',
+        ...(serviceIds ? { services: serviceIds } : {}),
+      },
     })
   } catch {
     // Cancel failed -- stay on page

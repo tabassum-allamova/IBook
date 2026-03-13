@@ -26,9 +26,11 @@ class BookingCreateSerializer(serializers.Serializer):
 class AppointmentServiceSerializer(serializers.ModelSerializer):
     """Read-only nested representation of a service snapshot within an appointment."""
 
+    service_id = serializers.IntegerField(read_only=True)
+
     class Meta:
         model = AppointmentService
-        fields = ['service_name', 'service_price', 'service_duration']
+        fields = ['service_id', 'service_name', 'service_price', 'service_duration']
 
 
 class AppointmentSerializer(serializers.ModelSerializer):

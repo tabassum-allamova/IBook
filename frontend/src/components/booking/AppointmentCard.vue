@@ -1,5 +1,6 @@
 <script setup lang="ts">
 export interface AppointmentServiceItem {
+  service_id: number | null
   service_name: string
   service_price: number
   service_duration: number
