@@ -13,7 +13,7 @@ export interface AppointmentResult {
   payment_status: string
   total_price: number
   total_duration: number
-  appointment_services: { service_name: string; price: number }[]
+  services: { service_id: number | null; service_name: string; service_price: number; service_duration: number }[]
   shop_name?: string
   shop_address?: string
 }
@@ -81,12 +81,12 @@ function paymentLabel(method: string, status: string): string {
         <div class="text-xs uppercase text-ibook-brown-400 mb-1">Services</div>
         <ul class="space-y-1">
           <li
-            v-for="svc in props.appointment.appointment_services"
+            v-for="svc in props.appointment.services"
             :key="svc.service_name"
             class="flex justify-between text-sm text-ibook-brown-700"
           >
             <span>{{ svc.service_name }}</span>
-            <span class="font-medium">{{ formatPrice(svc.price) }}</span>
+            <span class="font-medium">{{ formatPrice(svc.service_price) }}</span>
           </li>
         </ul>
       </div>
