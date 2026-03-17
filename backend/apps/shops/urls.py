@@ -6,14 +6,15 @@ Order matters: 'my/' must come before '<int:shop_id>/' to avoid integer parse cl
 
 from django.urls import path
 
-from .views import MembershipView, ShopCreateView, ShopDetailView, ShopHoursView, ShopMeView, ShopPhotoView
+from .views import MembershipView, ShopCreateView, ShopDetailView, ShopHoursView, ShopListView, ShopMeView, ShopPhotoView
 
 urlpatterns = [
     # Owner self-lookup — must come before parameterised routes
     path('my/', ShopMeView.as_view(), name='shop-me'),
 
-    # Shop creation and listing
-    path('', ShopCreateView.as_view(), name='shop-create'),
+    # GET: list shops (any authenticated user), POST: create shop (shop owner only)
+    path('', ShopListView.as_view(), name='shop-list'),
+    path('create/', ShopCreateView.as_view(), name='shop-create'),
 
     # Shop detail and update
     path('<int:shop_id>/', ShopDetailView.as_view(), name='shop-detail'),

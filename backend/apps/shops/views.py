@@ -23,11 +23,74 @@ from apps.users.models import CustomUser
 from apps.users.permissions import IsShopOwner
 
 from .models import BarberShopMembership, Shop, ShopHours, ShopPhoto
-from .serializers import MembershipSerializer, ShopHoursSerializer, ShopPhotoSerializer, ShopSerializer
+from .serializers import MembershipSerializer, ShopHoursSerializer, ShopListSerializer, ShopPhotoSerializer, ShopSerializer
+from .utils import annotate_distance
+
+
+class ShopListView(APIView):
+    """
+    GET /api/shops/ — list all shops with optional distance annotation and name filter.
+
+    Query params:
+        lat (float, optional): User latitude for Haversine distance annotation
+        lng (float, optional): User longitude for Haversine distance annotation
+        name (str, optional): Case-insensitive partial match on shop name
+
+    When lat+lng provided:
+        - Returns only shops with non-null coordinates
+        - Annotates each shop with haversine_distance
+        - Orders results by distance ascending
+
+    When lat/lng omitted:
+        - Returns all shops (including those without coordinates)
+        - distance_km is null for all shops
+    """
+
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        queryset = Shop.objects.all()
+
+        # Apply name filter if provided
+        name = request.query_params.get('name')
+        if name:
+            queryset = queryset.filter(name__icontains=name)
+
+        # Apply distance annotation if coordinates are provided
+        lat_param = request.query_params.get('lat')
+        lng_param = request.query_params.get('lng')
+
+        if lat_param is not None and lng_param is not None:
+            try:
+                lat = float(lat_param)
+                lng = float(lng_param)
+            except (ValueError, TypeError):
+                return Response({'detail': 'lat and lng must be valid floating-point numbers.'}, status=400)
+            queryset = annotate_distance(queryset, lat, lng)
+
+        serializer = ShopListSerializer(queryset, many=True, context={'request': request})
+        return Response(serializer.data)
+
+    def post(self, request):
+        """POST /api/shops/ — create a new shop for the authenticated owner."""
+        # Delegate permission check: only shop owners can create
+        from apps.users.permissions import IsShopOwner as _IsShopOwner
+        permission = _IsShopOwner()
+        if not permission.has_permission(request, self):
+            from rest_framework.exceptions import PermissionDenied
+            raise PermissionDenied()
+        serializer = ShopSerializer(data=request.data, context={'request': request})
+        serializer.is_valid(raise_exception=True)
+        serializer.save(owner=request.user)
+        return Response(serializer.data, status=201)
 
 
 class ShopCreateView(APIView):
-    """POST /api/shops/ — create a new shop for the authenticated owner."""
+    """
+    POST /api/shops/create/ — create a new shop for the authenticated owner.
+
+    Kept for backward compatibility; ShopListView at path('') also handles POST /api/shops/.
+    """
 
     permission_classes = [IsShopOwner]
 
