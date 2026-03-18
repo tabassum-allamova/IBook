@@ -16,6 +16,7 @@ All views live under the /api/auth/ prefix (configured in config/urls.py).
 from django.conf import settings
 from django.core.mail import send_mail
 from django.core.signing import BadSignature, SignatureExpired, TimestampSigner
+from django.shortcuts import get_object_or_404
 from rest_framework import status
 from rest_framework.generics import RetrieveUpdateAPIView
 from rest_framework.parsers import FormParser, MultiPartParser
@@ -28,6 +29,7 @@ from rest_framework_simplejwt.tokens import RefreshToken
 
 from apps.users.models import CustomUser
 from apps.users.serializers import (
+    BarberProfileSerializer,
     CustomerRegisterSerializer,
     CustomTokenObtainPairSerializer,
     ProfessionalRegisterSerializer,
@@ -308,3 +310,24 @@ class ProfileView(RetrieveUpdateAPIView):
     def update(self, request: Request, *args, **kwargs) -> Response:
         kwargs["partial"] = True  # Always partial — PATCH semantics
         return super().update(request, *args, **kwargs)
+
+
+# ---------------------------------------------------------------------------
+# Barber profile (Phase 4 - Discovery)
+# ---------------------------------------------------------------------------
+
+
+class BarberProfileView(APIView):
+    """
+    GET /api/barbers/<pk>/ — retrieve full barber profile.
+
+    Accessible to any authenticated user (customer, barber, or shop owner).
+    Returns 404 if the user does not exist or is not a barber.
+    """
+
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request: Request, pk: int) -> Response:
+        barber = get_object_or_404(CustomUser, pk=pk, role=CustomUser.Role.BARBER)
+        serializer = BarberProfileSerializer(barber, context={'request': request})
+        return Response(serializer.data)

@@ -14,7 +14,7 @@ from django.conf import settings
 from django.conf.urls.static import static
 from django.contrib import admin
 from django.urls import include, path
-from apps.users.views import BarberDashboardStubView, ShopOwnerDashboardStubView
+from apps.users.views import BarberDashboardStubView, BarberProfileView, ShopOwnerDashboardStubView
 from apps.services.urls import services_urlpatterns, availability_urlpatterns
 
 urlpatterns = [
@@ -27,6 +27,9 @@ urlpatterns = [
     path("api/availability/", include((availability_urlpatterns, "availability"))),
     # Bookings (Phase 3)
     path("api/bookings/", include("apps.bookings.urls")),
+    # Phase 4 — barber profile detail endpoint
+    # Note: "dashboard" is a string, not an integer, so it does not conflict with <int:pk>
+    path("api/barbers/<int:pk>/", BarberProfileView.as_view(), name="barber-profile"),
     # Phase 1 stubs — will be replaced by full app url configs in Phase 3
     path("api/barbers/dashboard/", BarberDashboardStubView.as_view(), name="barbers-dashboard"),
     path("api/shops/dashboard/", ShopOwnerDashboardStubView.as_view(), name="shops-dashboard"),

@@ -6,6 +6,7 @@ Provides:
   - ProfessionalRegisterSerializer
   - CustomTokenObtainPairSerializer
   - UserProfileSerializer
+  - BarberProfileSerializer
 """
 
 import re
@@ -163,3 +164,67 @@ class UserProfileSerializer(serializers.ModelSerializer):
 
     def get_full_name(self, obj: CustomUser) -> str:
         return obj.get_full_name()
+
+
+class BarberProfileSerializer(serializers.Serializer):
+    """
+    Full barber profile for the customer-facing barber profile page.
+
+    Aggregates data from CustomUser, Service, WeeklySchedule, and BarberShopMembership.
+    avg_rating is a placeholder returning None until Phase 5 adds the Review model.
+    """
+
+    id = serializers.IntegerField()
+    full_name = serializers.SerializerMethodField()
+    avatar = serializers.SerializerMethodField()
+    bio = serializers.CharField()
+    years_of_experience = serializers.IntegerField(allow_null=True)
+    services = serializers.SerializerMethodField()
+    weekly_schedule = serializers.SerializerMethodField()
+    shop_name = serializers.SerializerMethodField()
+    avg_rating = serializers.SerializerMethodField()
+
+    def get_full_name(self, obj: CustomUser) -> str:
+        return obj.get_full_name() or obj.email
+
+    def get_avatar(self, obj: CustomUser) -> str | None:
+        if not obj.avatar:
+            return None
+        request = self.context.get('request')
+        if request:
+            return request.build_absolute_uri(obj.avatar.url)
+        return obj.avatar.url
+
+    def get_services(self, obj: CustomUser) -> list:
+        from apps.services.models import Service
+        services = Service.objects.filter(barber=obj).order_by('sort_order')
+        return [
+            {
+                'id': svc.id,
+                'name': svc.name,
+                'price': svc.price,
+                'duration_minutes': svc.duration_minutes,
+            }
+            for svc in services
+        ]
+
+    def get_weekly_schedule(self, obj: CustomUser) -> list:
+        from apps.services.models import WeeklySchedule
+        schedule = WeeklySchedule.objects.filter(barber=obj).order_by('day_of_week')
+        return [
+            {
+                'day_of_week': entry.day_of_week,
+                'is_working': entry.is_working,
+                'start_time': str(entry.start_time) if entry.start_time else None,
+                'end_time': str(entry.end_time) if entry.end_time else None,
+            }
+            for entry in schedule
+        ]
+
+    def get_shop_name(self, obj: CustomUser) -> str | None:
+        membership = obj.shop_memberships.select_related('shop').first()
+        return membership.shop.name if membership else None
+
+    def get_avg_rating(self, obj: CustomUser) -> None:
+        """Placeholder — Phase 5 adds Review model with real ratings."""
+        return None
