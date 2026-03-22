@@ -60,6 +60,20 @@ const routes: RouteRecordRaw[] = [
     component: () => import('@/views/customer/SettingsPage.vue'),
     meta: { requiresAuth: true, role: 'CUSTOMER' as UserRole },
   },
+  {
+    path: '/customer/shop/:shopId',
+    name: 'customer-shop-detail',
+    component: () => import('@/views/customer/ShopDetailPage.vue'),
+    meta: { requiresAuth: true, role: 'CUSTOMER' as UserRole },
+    props: true,
+  },
+  {
+    path: '/customer/barber/:barberId',
+    name: 'customer-barber-profile',
+    component: () => import('@/views/customer/BarberProfilePage.vue'),
+    meta: { requiresAuth: true, role: 'CUSTOMER' as UserRole },
+    props: true,
+  },
 
   // Barber routes
   {
