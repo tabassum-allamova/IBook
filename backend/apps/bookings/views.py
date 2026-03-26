@@ -8,7 +8,7 @@ and a customer-facing barber services read endpoint.
 import datetime
 
 from django.db import transaction
-from django.db.models import Q
+from django.db.models import Exists, OuterRef, Q
 from django.utils import timezone
 from rest_framework import status
 from rest_framework.permissions import IsAuthenticated
@@ -304,6 +304,7 @@ class CustomerAppointmentListView(APIView):
             ).order_by('date', 'start_time')
         else:
             # Past: completed, cancelled, no-show, or past-date confirmed
+            from apps.reviews.models import Review
             qs = Appointment.objects.filter(
                 customer=request.user,
             ).filter(
@@ -312,6 +313,8 @@ class CustomerAppointmentListView(APIView):
                     Appointment.Status.CANCELLED,
                     Appointment.Status.NO_SHOW,
                 ]) | Q(status=Appointment.Status.CONFIRMED, date__lt=today)
+            ).annotate(
+                has_review=Exists(Review.objects.filter(appointment=OuterRef('pk')))
             ).order_by('-date', '-start_time')
 
         return Response(AppointmentListSerializer(qs, many=True).data)

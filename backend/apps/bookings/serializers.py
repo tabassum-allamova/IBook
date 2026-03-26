@@ -65,6 +65,7 @@ class AppointmentListSerializer(serializers.ModelSerializer):
     shop_address = serializers.SerializerMethodField()
     customer_name = serializers.SerializerMethodField()
     barber_name = serializers.SerializerMethodField()
+    has_review = serializers.SerializerMethodField()
 
     class Meta:
         model = Appointment
@@ -73,7 +74,7 @@ class AppointmentListSerializer(serializers.ModelSerializer):
             'date', 'start_time', 'end_time',
             'status', 'payment_method', 'payment_status',
             'total_price', 'total_duration', 'created_at', 'services',
-            'shop_name', 'shop_address',
+            'shop_name', 'shop_address', 'has_review',
         ]
 
     def _get_shop(self, obj):
@@ -94,3 +95,6 @@ class AppointmentListSerializer(serializers.ModelSerializer):
 
     def get_barber_name(self, obj):
         return obj.barber.get_full_name() or obj.barber.username
+
+    def get_has_review(self, obj) -> bool:
+        return getattr(obj, 'has_review', False)

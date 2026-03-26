@@ -27,6 +27,8 @@ urlpatterns = [
     path("api/availability/", include((availability_urlpatterns, "availability"))),
     # Bookings (Phase 3)
     path("api/bookings/", include("apps.bookings.urls")),
+    # Reviews (Phase 5)
+    path("api/reviews/", include("apps.reviews.urls")),
     # Phase 4 — barber profile detail endpoint
     # Note: "dashboard" is a string, not an integer, so it does not conflict with <int:pk>
     path("api/barbers/<int:pk>/", BarberProfileView.as_view(), name="barber-profile"),

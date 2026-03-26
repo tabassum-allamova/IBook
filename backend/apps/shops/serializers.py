@@ -126,6 +126,11 @@ class ShopListSerializer(serializers.ModelSerializer):
         )
         return result
 
-    def get_avg_rating(self, obj) -> None:
-        """Placeholder until Phase 5 adds the Review model."""
-        return None
+    def get_avg_rating(self, obj) -> float | None:
+        """Returns average rating aggregated across all barbers in this shop."""
+        from django.db.models import Avg
+        from apps.reviews.models import Review
+        result = Review.objects.filter(
+            barber__shop_memberships__shop=obj
+        ).aggregate(avg=Avg('rating'))['avg']
+        return round(result, 1) if result else None

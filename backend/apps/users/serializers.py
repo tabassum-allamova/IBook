@@ -225,6 +225,9 @@ class BarberProfileSerializer(serializers.Serializer):
         membership = obj.shop_memberships.select_related('shop').first()
         return membership.shop.name if membership else None
 
-    def get_avg_rating(self, obj: CustomUser) -> None:
-        """Placeholder — Phase 5 adds Review model with real ratings."""
-        return None
+    def get_avg_rating(self, obj: CustomUser) -> float | None:
+        """Returns average barber rating from Review model."""
+        from django.db.models import Avg
+        from apps.reviews.models import Review
+        result = Review.objects.filter(barber=obj).aggregate(avg=Avg('rating'))['avg']
+        return round(result, 1) if result else None
