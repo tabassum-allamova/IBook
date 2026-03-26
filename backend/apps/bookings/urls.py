@@ -6,6 +6,7 @@ All endpoints live at /api/bookings/* (included from config/urls.py).
 
 from django.urls import path
 
+from apps.bookings.analytics_views import BarberAnalyticsView, OwnerAnalyticsView
 from apps.bookings.views import (
     AppointmentCancelView,
     AppointmentNoShowView,
@@ -22,6 +23,10 @@ urlpatterns = [
 
     # Slot availability
     path('slots/', AvailableSlotsView.as_view(), name='available-slots'),
+
+    # Analytics dashboards (must be before <int:pk> patterns)
+    path('analytics/barber/', BarberAnalyticsView.as_view(), name='barber-analytics'),
+    path('analytics/owner/', OwnerAnalyticsView.as_view(), name='owner-analytics'),
 
     # Booking creation
     path('', BookingCreateView.as_view(), name='booking-create'),
