@@ -2,7 +2,8 @@
 import Sidebar from '@/components/layout/Sidebar.vue'
 
 const navItems = [
-  { label: 'Appointments', to: '/barber/dashboard' },
+  { label: 'Analytics', to: '/barber/dashboard' },
+  { label: 'Appointments', to: '/barber/appointments' },
   { label: 'Profile', to: '/barber/profile' },
   { label: 'Services', to: '/barber/services' },
   { label: 'Availability', to: '/barber/availability' },

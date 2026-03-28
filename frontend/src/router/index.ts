@@ -74,6 +74,13 @@ const routes: RouteRecordRaw[] = [
     meta: { requiresAuth: true, role: 'CUSTOMER' as UserRole },
     props: true,
   },
+  {
+    path: '/customer/review/:appointmentId',
+    name: 'customer-review',
+    component: () => import('@/views/customer/ReviewPage.vue'),
+    meta: { requiresAuth: true, role: 'CUSTOMER' as UserRole },
+    props: true,
+  },
 
   // Barber routes
   {
@@ -85,6 +92,12 @@ const routes: RouteRecordRaw[] = [
     path: '/barber/dashboard',
     name: 'barber-dashboard',
     component: () => import('@/views/barber/DashboardPage.vue'),
+    meta: { requiresAuth: true, role: 'BARBER' as UserRole },
+  },
+  {
+    path: '/barber/appointments',
+    name: 'barber-appointments',
+    component: () => import('@/views/barber/AppointmentsPage.vue'),
     meta: { requiresAuth: true, role: 'BARBER' as UserRole },
   },
   {
