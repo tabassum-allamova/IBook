@@ -38,6 +38,20 @@ interface BarberProfile {
   avg_rating: number | null
 }
 
+interface ReviewItem {
+  reviewer: string
+  rating: number
+  text: string
+  date: string
+}
+
+interface ReviewsData {
+  avg_rating: number | null
+  total_reviews: number
+  distribution: Record<string, number>
+  recent_reviews: ReviewItem[]
+}
+
 const { data: barber, isLoading, isError } = useQuery({
   queryKey: computed(() => ['barber', barberIdNum.value]),
   queryFn: async () => {
@@ -50,6 +64,15 @@ const { data: barber, isLoading, isError } = useQuery({
     if (axiosError?.response?.status === 404) return false
     return failureCount < 2
   },
+})
+
+const { data: reviewsData, isLoading: isLoadingReviews } = useQuery<ReviewsData>({
+  queryKey: computed(() => ['barber-reviews', barberIdNum.value]),
+  queryFn: async () => {
+    const res = await api.get<ReviewsData>(`/api/reviews/barber/${barberIdNum.value}/`)
+    return res.data
+  },
+  enabled: computed(() => !isNaN(barberIdNum.value) && !!barber.value),
 })
 
 const DAYS = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday']
@@ -72,6 +95,19 @@ const backShopId = computed(() => {
   const id = route.query.shopId
   return id ? String(id) : null
 })
+
+function formatReviewDate(dateStr: string): string {
+  return new Date(dateStr + 'T00:00:00').toLocaleDateString('en-US', {
+    month: 'short',
+    day: 'numeric',
+    year: 'numeric',
+  })
+}
+
+function starDistributionPct(count: number, total: number): number {
+  if (total === 0) return 0
+  return Math.round((count / total) * 100)
+}
 </script>
 
 <template>
@@ -231,24 +267,98 @@ const backShopId = computed(() => {
           </div>
         </div>
 
-        <!-- Ratings placeholder -->
+        <!-- Reviews section -->
         <div class="bg-white rounded-xl border border-ibook-brown-100 shadow-sm p-5">
-          <h2 class="text-base font-semibold text-ibook-brown-900 mb-2">Reviews</h2>
-          <div v-if="barber.avg_rating !== null" class="flex items-center gap-2">
-            <div class="flex items-center gap-0.5">
-              <svg class="h-5 w-5 text-ibook-gold-400" fill="currentColor" viewBox="0 0 20 20">
-                <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
-              </svg>
-              <span class="font-semibold text-ibook-brown-900">{{ barber.avg_rating.toFixed(1) }}</span>
-            </div>
-            <span class="text-sm text-ibook-brown-500">Average rating</span>
+          <h2 class="text-base font-semibold text-ibook-brown-900 mb-4">Reviews</h2>
+
+          <!-- Reviews loading skeleton -->
+          <div v-if="isLoadingReviews" class="space-y-3">
+            <div class="h-4 bg-ibook-brown-100 rounded animate-pulse w-1/3" />
+            <div class="h-2 bg-ibook-brown-100 rounded animate-pulse" />
+            <div class="h-2 bg-ibook-brown-100 rounded animate-pulse w-4/5" />
+            <div class="h-2 bg-ibook-brown-100 rounded animate-pulse w-3/4" />
           </div>
-          <div v-else class="text-center py-6">
+
+          <!-- No reviews yet -->
+          <div
+            v-else-if="!reviewsData || reviewsData.total_reviews === 0"
+            class="text-center py-6"
+          >
             <svg class="h-10 w-10 text-ibook-brown-200 mx-auto mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
             </svg>
             <p class="text-ibook-brown-500 font-medium text-sm">No reviews yet</p>
-            <p class="text-ibook-brown-400 text-xs mt-1">Reviews coming soon.</p>
+            <p class="text-ibook-brown-400 text-xs mt-1">Be the first to leave a review.</p>
+          </div>
+
+          <!-- Reviews content -->
+          <div v-else class="space-y-6">
+
+            <!-- Rating summary header -->
+            <div class="flex items-center gap-3">
+              <div class="flex items-center gap-1.5">
+                <span class="text-3xl font-bold text-ibook-brown-900">{{ reviewsData.avg_rating?.toFixed(1) }}</span>
+                <svg class="h-7 w-7 text-ibook-gold-400 fill-current" viewBox="0 0 20 20">
+                  <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
+                </svg>
+              </div>
+              <span class="text-sm text-ibook-brown-500">{{ reviewsData.total_reviews }} {{ reviewsData.total_reviews === 1 ? 'review' : 'reviews' }}</span>
+            </div>
+
+            <!-- Star distribution bars -->
+            <div class="space-y-2">
+              <div
+                v-for="starNum in [5, 4, 3, 2, 1]"
+                :key="starNum"
+                class="flex items-center gap-2"
+              >
+                <span class="w-4 text-xs font-medium text-ibook-brown-600 text-right flex-shrink-0">{{ starNum }}</span>
+                <svg class="h-3 w-3 text-ibook-gold-400 fill-current flex-shrink-0" viewBox="0 0 20 20">
+                  <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
+                </svg>
+                <div class="flex-1 bg-ibook-brown-100 rounded-full h-2 overflow-hidden">
+                  <div
+                    class="h-full bg-ibook-gold-400 rounded-full transition-all duration-[600ms] ease-out"
+                    :style="{ width: starDistributionPct(reviewsData.distribution[String(starNum)] ?? 0, reviewsData.total_reviews) + '%' }"
+                  />
+                </div>
+                <span class="w-6 text-xs text-ibook-brown-400 text-right flex-shrink-0">
+                  {{ reviewsData.distribution[String(starNum)] ?? 0 }}
+                </span>
+              </div>
+            </div>
+
+            <!-- Recent reviews list -->
+            <div>
+              <p class="text-sm font-semibold text-ibook-brown-900 mb-3">Recent Reviews</p>
+              <div class="divide-y divide-ibook-brown-50">
+                <div
+                  v-for="(review, idx) in reviewsData.recent_reviews"
+                  :key="idx"
+                  class="py-4 first:pt-0"
+                >
+                  <div class="flex items-start justify-between mb-1.5">
+                    <span class="text-sm font-semibold text-ibook-brown-900">{{ review.reviewer }}</span>
+                    <span class="text-xs text-ibook-brown-400 flex-shrink-0 ml-2">{{ formatReviewDate(review.date) }}</span>
+                  </div>
+                  <!-- Stars -->
+                  <div class="flex items-center gap-0.5 mb-2">
+                    <svg
+                      v-for="star in 5"
+                      :key="star"
+                      class="h-4 w-4"
+                      :class="star <= review.rating ? 'text-ibook-gold-400 fill-current' : 'text-ibook-brown-200 fill-current'"
+                      viewBox="0 0 20 20"
+                    >
+                      <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
+                    </svg>
+                  </div>
+                  <!-- Review text (only if non-empty) -->
+                  <p v-if="review.text" class="text-sm text-ibook-brown-700 leading-relaxed">{{ review.text }}</p>
+                </div>
+              </div>
+            </div>
+
           </div>
         </div>
 
