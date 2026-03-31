@@ -1,6 +1,5 @@
 <script setup lang="ts">
 import { computed } from 'vue'
-import { useRoute } from 'vue-router'
 import { useQuery } from '@tanstack/vue-query'
 import L from 'leaflet'
 import 'leaflet/dist/leaflet.css'
@@ -26,7 +25,6 @@ const props = defineProps<{
   shopId: string
 }>()
 
-const route = useRoute()
 const shopIdNum = computed(() => Number(props.shopId))
 
 interface HoursEntry {
@@ -109,12 +107,6 @@ const mapCenter = computed<[number, number] | null>(() => {
   return null
 })
 
-// Scroll to current gallery photo
-let galleryEl: HTMLElement | null = null
-
-const fromShop = computed(() => {
-  return route.query.from === 'shop'
-})
 </script>
 
 <template>
