@@ -7,6 +7,8 @@ and a customer-facing barber services read endpoint.
 
 import datetime
 
+import stripe
+from django.conf import settings as django_settings
 from django.db import transaction
 from django.db.models import Exists, OuterRef, Q
 from django.utils import timezone
@@ -440,3 +442,35 @@ class AppointmentNoShowView(APIView):
         appointment.save()
 
         return Response(AppointmentSerializer(appointment).data)
+
+
+class CreatePaymentIntentView(APIView):
+    """
+    POST /api/bookings/create-payment-intent/
+
+    Creates a Stripe PaymentIntent for online payment in UZS.
+    UZS is a zero-decimal currency — pass raw integer amount directly.
+    Returns client_secret for Stripe Elements frontend confirmation.
+    """
+
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request):
+        amount = request.data.get('amount')
+        if not amount or not isinstance(amount, int) or amount <= 0:
+            return Response({'detail': 'Invalid amount.'}, status=status.HTTP_400_BAD_REQUEST)
+
+        stripe.api_key = django_settings.STRIPE_SECRET_KEY
+        if not stripe.api_key:
+            return Response({'detail': 'Stripe not configured.'}, status=status.HTTP_503_SERVICE_UNAVAILABLE)
+
+        try:
+            intent = stripe.PaymentIntent.create(
+                amount=amount,   # UZS is zero-decimal — pass raw integer
+                currency='uzs',
+                automatic_payment_methods={'enabled': True},
+                metadata={'user_id': request.user.id},
+            )
+            return Response({'client_secret': intent.client_secret})
+        except stripe.error.StripeError as e:
+            return Response({'detail': str(e)}, status=status.HTTP_400_BAD_REQUEST)

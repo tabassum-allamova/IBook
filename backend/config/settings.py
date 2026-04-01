@@ -204,3 +204,10 @@ if not EMAIL_HOST_USER or not EMAIL_HOST_PASSWORD:
 # ---------------------------------------------------------------------------
 
 FRONTEND_URL = config("FRONTEND_URL", default="http://localhost:5173")
+
+# ---------------------------------------------------------------------------
+# Stripe — test-mode payment processing
+# ---------------------------------------------------------------------------
+
+STRIPE_SECRET_KEY = config('STRIPE_SECRET_KEY', default='')
+STRIPE_PUBLISHABLE_KEY = config('STRIPE_PUBLISHABLE_KEY', default='')

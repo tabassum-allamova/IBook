@@ -14,6 +14,7 @@ from apps.bookings.views import (
     BarberAppointmentListView,
     BarberServicesPublicView,
     BookingCreateView,
+    CreatePaymentIntentView,
     CustomerAppointmentListView,
 )
 
@@ -27,6 +28,9 @@ urlpatterns = [
     # Analytics dashboards (must be before <int:pk> patterns)
     path('analytics/barber/', BarberAnalyticsView.as_view(), name='barber-analytics'),
     path('analytics/owner/', OwnerAnalyticsView.as_view(), name='owner-analytics'),
+
+    # Stripe payment intent creation
+    path('create-payment-intent/', CreatePaymentIntentView.as_view(), name='create-payment-intent'),
 
     # Booking creation
     path('', BookingCreateView.as_view(), name='booking-create'),
