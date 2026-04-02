@@ -9,6 +9,7 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@stripe/stripe-js": "^9.0.1",
     "@tanstack/vue-query": "^5.95.2",
     "@vue-leaflet/vue-leaflet": "^0.10.1",
     "@vueuse/core": "^14.2.1",

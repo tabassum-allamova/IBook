@@ -6,7 +6,7 @@ import CustomerLayout from '@/layouts/CustomerLayout.vue'
 import DateScroller from '@/components/booking/DateScroller.vue'
 import SlotGrid from '@/components/booking/SlotGrid.vue'
 import ServiceSelector from '@/components/booking/ServiceSelector.vue'
-import MockPaymentForm from '@/components/booking/MockPaymentForm.vue'
+import StripePaymentForm from '@/components/booking/StripePaymentForm.vue'
 import BookingConfirmation from '@/components/booking/BookingConfirmation.vue'
 import type { Service } from '@/components/booking/ServiceSelector.vue'
 import type { AppointmentResult } from '@/components/booking/BookingConfirmation.vue'
@@ -26,6 +26,7 @@ const step = ref(1)
 const selectedServices = ref<Service[]>([])
 const selectedDate = ref(new Date().toISOString().split('T')[0])
 const selectedSlot = ref('')
+const paymentMethod = ref<'ONLINE' | 'AT_SHOP'>('ONLINE')
 const bookingResult = ref<AppointmentResult | null>(null)
 const paymentError = ref('')
 
@@ -113,7 +114,6 @@ const bookMutation = useMutation({
     start_time: string
     service_ids: number[]
     payment_method: 'ONLINE' | 'AT_SHOP'
-    card_number?: string
   }) => api.post('/api/bookings/', payload).then((r) => r.data),
   onSuccess: (data: AppointmentResult) => {
     bookingResult.value = data
@@ -141,10 +141,7 @@ const bookMutation = useMutation({
   },
 })
 
-function handlePayment(data: {
-  payment_method: 'ONLINE' | 'AT_SHOP'
-  card_number?: string
-}) {
+function handlePayment(data: { payment_method: 'ONLINE' | 'AT_SHOP' }) {
   paymentError.value = ''
   bookMutation.mutate({
     barber_id: barberIdNum.value,
@@ -152,8 +149,11 @@ function handlePayment(data: {
     start_time: selectedSlot.value,
     service_ids: selectedServiceIds.value,
     payment_method: data.payment_method,
-    card_number: data.card_number,
   })
+}
+
+function handlePaymentError(message: string) {
+  paymentError.value = message
 }
 
 function handleServicesUpdate(services: Service[]) {
@@ -257,11 +257,57 @@ function handleServicesUpdate(services: Service[]) {
           {{ selectedServices.length }} service{{ selectedServices.length > 1 ? 's' : '' }}
         </div>
 
-        <MockPaymentForm
+        <!-- Payment method selector -->
+        <div class="space-y-3 mb-6">
+          <label
+            class="flex items-center gap-3 p-3 rounded-xl border cursor-pointer transition-colors"
+            :class="
+              paymentMethod === 'ONLINE'
+                ? 'border-ibook-gold-400 bg-ibook-brown-50'
+                : 'border-ibook-brown-200 bg-white'
+            "
+          >
+            <input
+              v-model="paymentMethod"
+              type="radio"
+              value="ONLINE"
+              class="w-4 h-4 accent-ibook-gold-500"
+            />
+            <span class="font-medium text-ibook-brown-800">Pay Online</span>
+          </label>
+
+          <label
+            class="flex items-center gap-3 p-3 rounded-xl border cursor-pointer transition-colors"
+            :class="
+              paymentMethod === 'AT_SHOP'
+                ? 'border-ibook-gold-400 bg-ibook-brown-50'
+                : 'border-ibook-brown-200 bg-white'
+            "
+          >
+            <input
+              v-model="paymentMethod"
+              type="radio"
+              value="AT_SHOP"
+              class="w-4 h-4 accent-ibook-gold-500"
+            />
+            <span class="font-medium text-ibook-brown-800">Pay at Shop</span>
+          </label>
+        </div>
+
+        <!-- Booking error (from mutation) -->
+        <div
+          v-if="paymentError"
+          class="mb-4 p-3 rounded-lg bg-red-50 border border-red-200 text-red-700 text-sm"
+        >
+          {{ paymentError }}
+        </div>
+
+        <StripePaymentForm
+          :key="paymentMethod"
           :total-price="totalPrice"
-          :loading="bookMutation.isPending.value"
-          :error="paymentError"
+          :payment-method="paymentMethod"
           @confirm="handlePayment"
+          @error="handlePaymentError"
         />
 
         <div class="mt-4">
