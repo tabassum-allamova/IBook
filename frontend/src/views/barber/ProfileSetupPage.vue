@@ -1,8 +1,12 @@
 <script setup lang="ts">
 import { ref } from 'vue'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/vue-query'
+import { useToast } from 'vue-toastification'
 import BarberLayout from '@/layouts/BarberLayout.vue'
+import SkeletonBlock from '@/components/ui/SkeletonBlock.vue'
 import api from '@/lib/axios'
+
+const toast = useToast()
 
 interface ProfileData {
   id: number
@@ -62,9 +66,11 @@ const uploadMutation = useMutation({
     selectedFile.value = null
     successMessage.value = 'Photo updated successfully'
     errorMessage.value = ''
+    toast.success('Profile photo updated')
   },
   onError: () => {
     errorMessage.value = 'Failed to upload photo. Please try again.'
+    toast.error('Failed to upload photo. Please try again.')
   },
 })
 
@@ -76,16 +82,22 @@ async function onSavePhoto() {
 
 <template>
   <BarberLayout>
-    <div class="p-8">
+    <div class="p-4 md:p-8">
       <!-- Page header -->
-      <div class="mb-8">
-        <h1 class="text-3xl font-bold text-ibook-brown-900">Profile Setup</h1>
+      <div class="mb-6 md:mb-8">
+        <h1 class="text-xl md:text-3xl font-bold text-ibook-brown-900">Profile Setup</h1>
         <p class="mt-1 text-ibook-brown-500">Manage your public profile photo.</p>
       </div>
 
       <!-- Profile card -->
-      <div class="bg-white rounded-2xl border border-ibook-brown-100 shadow-sm p-8 max-w-md">
-        <div v-if="isLoading" class="text-ibook-brown-400 text-sm">Loading profile...</div>
+      <div class="bg-white rounded-2xl border border-ibook-brown-100 shadow-sm p-6 md:p-8 max-w-md">
+        <div v-if="isLoading" class="space-y-4">
+          <div class="flex justify-center">
+            <SkeletonBlock height="6rem" width="6rem" class-name="rounded-full" />
+          </div>
+          <SkeletonBlock height="2.5rem" />
+          <SkeletonBlock height="2.5rem" />
+        </div>
         <div v-else class="flex flex-col items-center gap-6">
           <!-- Avatar preview -->
           <div class="relative">

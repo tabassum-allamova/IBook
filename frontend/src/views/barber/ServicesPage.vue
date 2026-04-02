@@ -1,11 +1,16 @@
 <script setup lang="ts">
 import { ref } from 'vue'
 import { useQuery, useQueryClient } from '@tanstack/vue-query'
+import { useToast } from 'vue-toastification'
 import BarberLayout from '@/layouts/BarberLayout.vue'
 import ServiceList from '@/components/services/ServiceList.vue'
 import ServiceModal from '@/components/services/ServiceModal.vue'
+import SkeletonBlock from '@/components/ui/SkeletonBlock.vue'
+import EmptyState from '@/components/ui/EmptyState.vue'
 import type { Service } from '@/components/services/ServiceModal.vue'
 import api from '@/lib/axios'
+
+const toast = useToast()
 
 const queryClient = useQueryClient()
 
@@ -36,6 +41,7 @@ function openEditModal(service: Service) {
 function onModalSaved() {
   queryClient.invalidateQueries({ queryKey: ['services'] })
   showModal.value = false
+  toast.success(modalMode.value === 'add' ? 'Service added' : 'Service updated')
 }
 
 function onModalClose() {
@@ -45,16 +51,16 @@ function onModalClose() {
 
 <template>
   <BarberLayout>
-    <div class="p-8">
+    <div class="p-4 md:p-8">
       <!-- Page header -->
-      <div class="flex items-center justify-between mb-8">
+      <div class="flex items-center justify-between mb-6 md:mb-8">
         <div>
-          <h1 class="text-3xl font-bold text-ibook-brown-900">Services</h1>
+          <h1 class="text-xl md:text-3xl font-bold text-ibook-brown-900">Services</h1>
           <p class="mt-1 text-ibook-brown-500">Manage your service catalog.</p>
         </div>
         <button
           type="button"
-          class="px-5 py-2.5 rounded-xl bg-ibook-gold-500 text-white text-sm font-semibold hover:bg-ibook-gold-600 transition-colors shadow-sm cursor-pointer"
+          class="px-4 py-2 md:px-5 md:py-2.5 rounded-xl bg-ibook-gold-500 text-white text-sm font-semibold hover:bg-ibook-gold-600 transition-colors shadow-sm cursor-pointer"
           @click="openAddModal"
         >
           + Add Service
@@ -62,10 +68,17 @@ function onModalClose() {
       </div>
 
       <!-- Services card -->
-      <div class="bg-white rounded-2xl border border-ibook-brown-100 shadow-sm p-6">
-        <div v-if="isLoading" class="py-8 text-center text-ibook-brown-400 text-sm">
-          Loading services...
+      <div class="bg-white rounded-2xl border border-ibook-brown-100 shadow-sm p-4 md:p-6">
+        <!-- Loading skeleton -->
+        <div v-if="isLoading" class="space-y-3">
+          <SkeletonBlock v-for="n in 4" :key="n" height="3.5rem" />
         </div>
+        <!-- Empty state -->
+        <EmptyState
+          v-else-if="!services || services.length === 0"
+          title="No services yet"
+          description="Add your first service to start accepting bookings."
+        />
         <ServiceList
           v-else
           :services="services ?? []"

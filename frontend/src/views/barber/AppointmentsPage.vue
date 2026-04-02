@@ -1,11 +1,15 @@
 <script setup lang="ts">
 import { ref, computed } from 'vue'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/vue-query'
+import { useToast } from 'vue-toastification'
 import BarberLayout from '@/layouts/BarberLayout.vue'
 import BarberDayNav from '@/components/booking/BarberDayNav.vue'
 import AppointmentCard from '@/components/booking/AppointmentCard.vue'
+import SkeletonBlock from '@/components/ui/SkeletonBlock.vue'
 import type { AppointmentData } from '@/components/booking/AppointmentCard.vue'
 import api from '@/lib/axios'
+
+const toast = useToast()
 
 const queryClient = useQueryClient()
 
@@ -54,6 +58,10 @@ const noShowMutation = useMutation({
   },
   onSuccess: () => {
     queryClient.invalidateQueries({ queryKey: ['barber-appointments'] })
+    toast.success('Marked as no-show')
+  },
+  onError: () => {
+    toast.error('Failed to update appointment.')
   },
   onSettled: () => {
     actionId.value = null
@@ -68,6 +76,10 @@ const cancelMutation = useMutation({
   },
   onSuccess: () => {
     queryClient.invalidateQueries({ queryKey: ['barber-appointments'] })
+    toast.success('Appointment cancelled')
+  },
+  onError: () => {
+    toast.error('Failed to cancel appointment.')
   },
   onSettled: () => {
     actionId.value = null
@@ -85,10 +97,10 @@ function handleCancel(id: number) {
 
 <template>
   <BarberLayout>
-    <div class="p-8">
+    <div class="p-4 md:p-8">
       <!-- Page header -->
       <div class="mb-6">
-        <h1 class="text-3xl font-bold text-ibook-brown-900">My Appointments</h1>
+        <h1 class="text-xl md:text-3xl font-bold text-ibook-brown-900">My Appointments</h1>
       </div>
 
       <!-- Date navigation -->
@@ -110,9 +122,9 @@ function handleCancel(id: number) {
         </div>
       </div>
 
-      <!-- Loading -->
-      <div v-if="isLoading" class="py-12 text-center text-ibook-brown-400 text-sm">
-        Loading appointments...
+      <!-- Loading skeleton -->
+      <div v-if="isLoading" class="space-y-3">
+        <SkeletonBlock v-for="n in 3" :key="n" height="5rem" />
       </div>
 
       <!-- Empty state -->

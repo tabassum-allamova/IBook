@@ -112,7 +112,7 @@ function starDistributionPct(count: number, total: number): number {
 
 <template>
   <CustomerLayout>
-    <div class="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-8 pb-24">
+    <div class="max-w-3xl mx-auto px-4 md:px-8 py-6 md:py-8 pb-24">
 
       <!-- Back link -->
       <RouterLink
@@ -170,8 +170,8 @@ function starDistributionPct(count: number, total: number): number {
       <!-- Barber content -->
       <div v-else-if="barber" class="space-y-7">
 
-        <!-- Header: avatar, name, experience, shop -->
-        <div class="flex items-start gap-5">
+        <!-- Header: avatar, name, experience, shop — stacks vertically on mobile -->
+        <div class="flex flex-col sm:flex-row items-center sm:items-start gap-4 sm:gap-5">
           <!-- Avatar -->
           <div class="flex-shrink-0 w-24 h-24 rounded-full overflow-hidden bg-ibook-brown-100 border-2 border-ibook-brown-200">
             <img
@@ -198,8 +198,8 @@ function starDistributionPct(count: number, total: number): number {
           </div>
 
           <!-- Name + meta -->
-          <div class="flex-1 pt-1">
-            <h1 class="text-2xl font-bold text-ibook-brown-900 mb-1">{{ barber.full_name }}</h1>
+          <div class="flex-1 pt-1 text-center sm:text-left">
+            <h1 class="text-xl md:text-2xl font-bold text-ibook-brown-900 mb-1">{{ barber.full_name }}</h1>
             <div class="flex flex-wrap gap-2 mt-2">
               <span
                 v-if="barber.years_of_experience !== null"

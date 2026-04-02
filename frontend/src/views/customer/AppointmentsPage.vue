@@ -2,10 +2,15 @@
 import { ref, computed } from 'vue'
 import { useRouter } from 'vue-router'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/vue-query'
+import { useToast } from 'vue-toastification'
 import CustomerLayout from '@/layouts/CustomerLayout.vue'
 import AppointmentCard from '@/components/booking/AppointmentCard.vue'
+import SkeletonBlock from '@/components/ui/SkeletonBlock.vue'
+import EmptyState from '@/components/ui/EmptyState.vue'
 import type { AppointmentData } from '@/components/booking/AppointmentCard.vue'
 import api from '@/lib/axios'
+
+const toast = useToast()
 
 const router = useRouter()
 const queryClient = useQueryClient()
@@ -34,6 +39,10 @@ const cancelMutation = useMutation({
   },
   onSuccess: () => {
     queryClient.invalidateQueries({ queryKey: ['appointments'] })
+    toast.success('Appointment cancelled')
+  },
+  onError: () => {
+    toast.error('Failed to cancel appointment. Please try again.')
   },
   onSettled: () => {
     cancellingId.value = null
@@ -74,10 +83,10 @@ async function handleReschedule(appointment: AppointmentData) {
 
 <template>
   <CustomerLayout>
-    <div class="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
+    <div class="max-w-3xl mx-auto px-4 md:px-8 py-6 md:py-10">
       <!-- Page header -->
-      <div class="mb-8">
-        <h1 class="text-3xl font-bold text-ibook-brown-900">My Appointments</h1>
+      <div class="mb-6 md:mb-8">
+        <h1 class="text-xl md:text-3xl font-bold text-ibook-brown-900">My Appointments</h1>
         <p class="mt-1 text-ibook-brown-500">View and manage your bookings.</p>
       </div>
 
@@ -109,45 +118,19 @@ async function handleReschedule(appointment: AppointmentData) {
         </button>
       </div>
 
-      <!-- Loading -->
-      <div v-if="isLoading" class="py-12 text-center text-ibook-brown-400 text-sm">
-        Loading appointments...
+      <!-- Loading skeleton -->
+      <div v-if="isLoading" class="space-y-3">
+        <SkeletonBlock v-for="n in 3" :key="n" height="6rem" />
       </div>
 
       <!-- Empty state -->
-      <div
+      <EmptyState
         v-else-if="!appointments || appointments.length === 0"
-        class="bg-white rounded-2xl border border-ibook-brown-100 shadow-sm p-12 flex flex-col items-center text-center"
-      >
-        <div
-          class="w-16 h-16 rounded-full bg-ibook-brown-100 flex items-center justify-center mb-4"
-        >
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            class="h-8 w-8 text-ibook-brown-400"
-            fill="none"
-            viewBox="0 0 24 24"
-            stroke="currentColor"
-            stroke-width="1.5"
-          >
-            <path
-              stroke-linecap="round"
-              stroke-linejoin="round"
-              d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"
-            />
-          </svg>
-        </div>
-        <h3 class="text-lg font-semibold text-ibook-brown-800 mb-2">
-          {{ activeTab === 'upcoming' ? 'No upcoming appointments' : 'No past appointments' }}
-        </h3>
-        <p class="text-ibook-brown-500 text-sm max-w-xs">
-          {{
-            activeTab === 'upcoming'
-              ? 'Book an appointment with a barber to get started.'
-              : 'Your completed, cancelled, or missed appointments will appear here.'
-          }}
-        </p>
-      </div>
+        :title="activeTab === 'upcoming' ? 'No upcoming appointments' : 'No past appointments'"
+        :description="activeTab === 'upcoming' ? 'Browse barbers and book your first appointment.' : 'Your completed appointments will appear here.'"
+        :action-to="activeTab === 'upcoming' ? '/customer/explore' : undefined"
+        :action-label="activeTab === 'upcoming' ? 'Find a barber' : undefined"
+      />
 
       <!-- Appointment list -->
       <div v-else class="space-y-4">

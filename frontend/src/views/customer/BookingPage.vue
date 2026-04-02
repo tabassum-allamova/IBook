@@ -2,6 +2,7 @@
 import { ref, computed, watch, onMounted } from 'vue'
 import { useRoute } from 'vue-router'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/vue-query'
+import { useToast } from 'vue-toastification'
 import CustomerLayout from '@/layouts/CustomerLayout.vue'
 import DateScroller from '@/components/booking/DateScroller.vue'
 import SlotGrid from '@/components/booking/SlotGrid.vue'
@@ -11,6 +12,8 @@ import BookingConfirmation from '@/components/booking/BookingConfirmation.vue'
 import type { Service } from '@/components/booking/ServiceSelector.vue'
 import type { AppointmentResult } from '@/components/booking/BookingConfirmation.vue'
 import api from '@/lib/axios'
+
+const toast = useToast()
 
 const props = defineProps<{
   barberId: string
@@ -120,23 +123,24 @@ const bookMutation = useMutation({
     step.value = 4
     queryClient.invalidateQueries({ queryKey: ['slots'] })
     queryClient.invalidateQueries({ queryKey: ['appointments'] })
+    toast.success('Appointment booked!')
   },
   onError: (error: unknown) => {
     const err = error as { response?: { status?: number; data?: { detail?: string } } }
     if (err.response?.status === 409) {
       // Slot taken - go back to step 2 and refetch
-      alert(
-        'This slot was just booked by someone else. Please pick another time.',
-      )
+      toast.error('This slot was just booked by someone else. Please pick another time.')
       selectedSlot.value = ''
       step.value = 2
       queryClient.invalidateQueries({ queryKey: ['slots'] })
     } else if (err.response?.status === 400) {
       // Payment declined or validation error
-      paymentError.value =
-        err.response.data?.detail ?? 'Payment declined. Please try again.'
+      const msg = err.response.data?.detail ?? 'Payment declined. Please try again.'
+      paymentError.value = msg
+      toast.error(msg)
     } else {
       paymentError.value = 'Something went wrong. Please try again.'
+      toast.error('Something went wrong. Please try again.')
     }
   },
 })
@@ -163,9 +167,9 @@ function handleServicesUpdate(services: Service[]) {
 
 <template>
   <CustomerLayout>
-    <div class="max-w-2xl mx-auto px-4 py-8">
+    <div class="max-w-2xl mx-auto px-4 md:px-8 py-6 md:py-8">
       <!-- Page header -->
-      <h1 class="text-2xl font-bold text-ibook-brown-800 mb-6">
+      <h1 class="text-xl md:text-2xl font-bold text-ibook-brown-800 mb-6">
         Book an Appointment
       </h1>
 

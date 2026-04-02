@@ -127,10 +127,10 @@ const trendChartOptions = {
 
 <template>
   <OwnerLayout>
-    <div class="p-6 lg:p-8">
+    <div class="p-4 md:p-6 lg:p-8">
       <!-- Page header -->
       <div class="mb-6">
-        <h1 class="text-3xl font-bold text-ibook-brown-900">Shop Overview</h1>
+        <h1 class="text-xl md:text-3xl font-bold text-ibook-brown-900">Shop Overview</h1>
         <p class="mt-1 text-sm text-ibook-brown-500">
           Welcome back, {{ auth.user?.fullName }}. Here's how your shop is performing.
         </p>

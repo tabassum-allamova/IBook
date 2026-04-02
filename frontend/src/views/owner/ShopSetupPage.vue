@@ -2,10 +2,13 @@
 import { ref, reactive } from 'vue'
 import { useRouter } from 'vue-router'
 import { useMutation } from '@tanstack/vue-query'
+import { useToast } from 'vue-toastification'
 import api from '@/lib/axios'
 import ShopWizardStep1 from '@/components/shop/ShopWizardStep1.vue'
 import ShopWizardStep2 from '@/components/shop/ShopWizardStep2.vue'
 import ShopWizardStep3 from '@/components/shop/ShopWizardStep3.vue'
+
+const toast = useToast()
 
 const router = useRouter()
 
@@ -140,11 +143,13 @@ async function handleSubmit() {
     }
 
     // Success — redirect to shop management page
+    toast.success('Shop created successfully!')
     router.push('/owner/shop')
   } catch (err: unknown) {
     const axiosErr = err as { response?: { data?: { detail?: string } } }
     submitError.value =
       axiosErr?.response?.data?.detail ?? 'Failed to create shop. Please try again.'
+    toast.error(submitError.value)
   } finally {
     isSubmitting.value = false
   }

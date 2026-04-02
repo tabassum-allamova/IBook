@@ -1,11 +1,15 @@
 <script setup lang="ts">
 import { ref, watch } from 'vue'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/vue-query'
+import { useToast } from 'vue-toastification'
 import BarberLayout from '@/layouts/BarberLayout.vue'
 import WeeklyScheduleEditor from '@/components/availability/WeeklyScheduleEditor.vue'
 import DateBlockCalendar from '@/components/availability/DateBlockCalendar.vue'
+import SkeletonBlock from '@/components/ui/SkeletonBlock.vue'
 import type { ScheduleDay } from '@/components/availability/WeeklyScheduleEditor.vue'
 import api from '@/lib/axios'
+
+const toast = useToast()
 
 const queryClient = useQueryClient()
 
@@ -52,6 +56,7 @@ const saveMutation = useMutation({
     queryClient.invalidateQueries({ queryKey: ['availability-schedule'] })
     saveSuccess.value = true
     saveError.value = ''
+    toast.success('Schedule saved')
     setTimeout(() => {
       saveSuccess.value = false
     }, 3000)
@@ -59,6 +64,7 @@ const saveMutation = useMutation({
   onError: () => {
     saveError.value = 'Failed to save schedule. Please try again.'
     saveSuccess.value = false
+    toast.error('Failed to save schedule. Please try again.')
   },
 })
 
@@ -69,10 +75,10 @@ async function onSaveSchedule() {
 
 <template>
   <BarberLayout>
-    <div class="p-8 space-y-6">
+    <div class="p-4 md:p-8 space-y-6">
       <!-- Page header -->
       <div>
-        <h1 class="text-3xl font-bold text-ibook-brown-900">Availability</h1>
+        <h1 class="text-xl md:text-3xl font-bold text-ibook-brown-900">Availability</h1>
         <p class="mt-1 text-ibook-brown-500">Set your working hours and block off unavailable dates.</p>
       </div>
 
@@ -85,8 +91,11 @@ async function onSaveSchedule() {
           </div>
         </div>
 
-        <div v-if="isLoading" class="py-6 text-center text-ibook-brown-400 text-sm">
-          Loading schedule...
+        <div v-if="isLoading" class="space-y-3">
+          <SkeletonBlock height="3rem" />
+          <SkeletonBlock height="3rem" />
+          <SkeletonBlock height="3rem" />
+          <SkeletonBlock height="3rem" />
         </div>
         <div v-else class="space-y-4">
           <WeeklyScheduleEditor v-model="scheduleData" />

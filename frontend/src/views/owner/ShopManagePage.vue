@@ -2,7 +2,10 @@
 import { ref, computed, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/vue-query'
+import { useToast } from 'vue-toastification'
 import api from '@/lib/axios'
+
+const toast = useToast()
 
 const router = useRouter()
 const queryClient = useQueryClient()
@@ -117,10 +120,12 @@ const addBarber = useMutation({
     queryClient.invalidateQueries({ queryKey: ['shop', 'owner'] })
     barberIdInput.value = ''
     addBarberError.value = null
+    toast.success('Barber added to shop')
   },
   onError: (err: unknown) => {
     const e = err as { response?: { data?: { detail?: string } } }
     addBarberError.value = e?.response?.data?.detail ?? 'Failed to add barber'
+    toast.error(addBarberError.value ?? 'Failed to add barber')
   },
 })
 
@@ -141,6 +146,10 @@ const removeBarber = useMutation({
     api.delete(`/api/shops/${shop.value!.id}/members/${barberId}/`),
   onSuccess: () => {
     queryClient.invalidateQueries({ queryKey: ['shop', 'owner'] })
+    toast.success('Barber removed from shop')
+  },
+  onError: () => {
+    toast.error('Failed to remove barber.')
   },
 })
 
@@ -163,7 +172,7 @@ function formatPrice(price: number): string {
 <template>
   <div class="min-h-screen bg-ibook-cream">
     <!-- Loading skeleton -->
-    <div v-if="shopLoading" class="p-8 space-y-6">
+    <div v-if="shopLoading" class="p-4 md:p-8 space-y-6">
       <div class="h-8 w-64 bg-ibook-brown-100 rounded animate-pulse" />
       <div class="h-4 w-48 bg-ibook-brown-100 rounded animate-pulse" />
       <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mt-8">
@@ -176,7 +185,7 @@ function formatPrice(price: number): string {
     </div>
 
     <!-- Shop content -->
-    <div v-else-if="shop" class="p-8 space-y-8 max-w-5xl">
+    <div v-else-if="shop" class="p-4 md:p-8 space-y-8 max-w-5xl">
       <!-- Header -->
       <div>
         <h1 class="text-3xl font-bold text-ibook-brown-700">{{ shop.name }}</h1>
@@ -333,9 +342,10 @@ function formatPrice(price: number): string {
         </div>
 
         <!-- Empty state -->
-        <p v-else class="text-sm text-ibook-brown-400 text-center py-8">
-          No barbers yet — add your first barber above
-        </p>
+        <div v-else class="py-8 text-center">
+          <p class="text-ibook-brown-400 font-medium text-sm">No barbers yet</p>
+          <p class="text-ibook-brown-300 text-xs mt-1">Enter a barber ID above to add your first barber.</p>
+        </div>
       </div>
     </div>
   </div>

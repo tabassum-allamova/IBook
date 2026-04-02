@@ -1,8 +1,12 @@
 <script setup lang="ts">
 import { ref, reactive, watch } from 'vue'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/vue-query'
+import { useToast } from 'vue-toastification'
 import api from '@/lib/axios'
 import { useAuthStore } from '@/stores/auth'
+import SkeletonBlock from '@/components/ui/SkeletonBlock.vue'
+
+const toast = useToast()
 
 interface ProfileData {
   id: number
@@ -78,11 +82,13 @@ const { mutate: saveProfile, isPending: isSaving } = useMutation({
     }
     successMsg.value = 'Profile updated successfully.'
     errorMsg.value = ''
+    toast.success('Profile updated')
     setTimeout(() => { successMsg.value = '' }, 4000)
   },
   onError: () => {
     errorMsg.value = 'Failed to update profile. Please try again.'
     successMsg.value = ''
+    toast.error('Failed to update profile. Please try again.')
   },
 })
 
@@ -118,20 +124,18 @@ function submit() {
 </script>
 
 <template>
-  <div class="p-8 max-w-2xl">
+  <div class="p-4 md:p-8 max-w-2xl">
     <!-- Header -->
-    <div class="mb-8">
-      <h1 class="text-3xl font-bold text-ibook-brown-900">Settings</h1>
+    <div class="mb-6 md:mb-8">
+      <h1 class="text-xl md:text-3xl font-bold text-ibook-brown-900">Settings</h1>
       <p class="mt-1 text-ibook-brown-500">Manage your account information.</p>
     </div>
 
-    <!-- Loading -->
-    <div v-if="isLoading" class="flex items-center gap-3 text-ibook-brown-500">
-      <svg class="animate-spin h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"></path>
-      </svg>
-      Loading profile…
+    <!-- Loading skeleton -->
+    <div v-if="isLoading" class="space-y-4">
+      <SkeletonBlock height="2.5rem" />
+      <SkeletonBlock height="2.5rem" />
+      <SkeletonBlock height="2.5rem" />
     </div>
 
     <!-- Error loading -->

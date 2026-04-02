@@ -111,7 +111,7 @@ const mapCenter = computed<[number, number] | null>(() => {
 
 <template>
   <CustomerLayout>
-    <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+    <div class="max-w-4xl mx-auto px-4 md:px-8 py-6 md:py-8">
 
       <!-- Back link -->
       <RouterLink
@@ -158,13 +158,13 @@ const mapCenter = computed<[number, number] | null>(() => {
         <!-- Photo gallery -->
         <div v-if="shop.photos.length > 0">
           <div
-            class="flex gap-3 overflow-x-auto pb-2"
+            class="flex gap-3 overflow-x-auto pb-2 -mx-4 px-4 md:mx-0 md:px-0"
             style="scroll-snap-type: x mandatory; -webkit-overflow-scrolling: touch;"
           >
             <div
               v-for="photo in shop.photos.slice(0, 5)"
               :key="photo.id"
-              class="flex-shrink-0 w-72 sm:w-80 h-52 rounded-xl overflow-hidden bg-ibook-brown-100"
+              class="flex-shrink-0 w-[85vw] sm:w-72 md:w-80 h-52 rounded-xl overflow-hidden bg-ibook-brown-100"
               style="scroll-snap-align: start;"
             >
               <img
@@ -189,7 +189,7 @@ const mapCenter = computed<[number, number] | null>(() => {
 
         <!-- Shop info -->
         <div>
-          <h1 class="text-3xl font-bold text-ibook-brown-900 mb-1">{{ shop.name }}</h1>
+          <h1 class="text-2xl md:text-3xl font-bold text-ibook-brown-900 mb-1">{{ shop.name }}</h1>
           <p class="text-ibook-brown-500 flex items-center gap-1.5 mb-3">
             <svg class="h-4 w-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />

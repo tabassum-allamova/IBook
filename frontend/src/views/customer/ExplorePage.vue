@@ -171,10 +171,10 @@ const filteredVisibleShops = computed(() => {
 
 <template>
   <CustomerLayout>
-    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+    <div class="max-w-7xl mx-auto px-4 md:px-8 py-4 md:py-6">
       <!-- Page header -->
-      <div class="mb-5">
-        <h1 class="text-3xl font-bold text-ibook-brown-900">Explore Barbers</h1>
+      <div class="mb-4 md:mb-5">
+        <h1 class="text-xl md:text-3xl font-bold text-ibook-brown-900">Explore Barbers</h1>
         <p class="mt-1 text-ibook-brown-500">Find and book the perfect barber near you.</p>
       </div>
 
@@ -215,8 +215,8 @@ const filteredVisibleShops = computed(() => {
           :zoom="13"
           :center="center"
           :use-global-leaflet="true"
-          style="height: 40vh"
-          class="z-0"
+          style="height: 50vh"
+          class="z-0 md:h-[40vh]"
           @moveend="onMoveEnd"
           @ready="onMapReady"
         >

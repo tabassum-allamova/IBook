@@ -2,9 +2,12 @@
 import { ref, computed, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/vue-query'
+import { useToast } from 'vue-toastification'
 import CustomerLayout from '@/layouts/CustomerLayout.vue'
 import api from '@/lib/axios'
 import type { AppointmentData } from '@/components/booking/AppointmentCard.vue'
+
+const toast = useToast()
 
 const props = defineProps<{
   appointmentId: string
@@ -67,6 +70,7 @@ const { mutate: submitReview, isPending, error: mutationError } = useMutation({
   onSuccess: () => {
     queryClient.invalidateQueries({ queryKey: ['appointments'] })
     submitted.value = true
+    toast.success('Review submitted!')
     setTimeout(() => {
       router.push('/customer/appointments')
     }, 1500)

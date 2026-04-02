@@ -139,10 +139,10 @@ const topServicesChartOptions = {
 
 <template>
   <BarberLayout>
-    <div class="p-6 lg:p-8">
+    <div class="p-4 md:p-6 lg:p-8">
       <!-- Page header -->
       <div class="mb-6">
-        <h1 class="text-3xl font-bold text-ibook-brown-900">Analytics</h1>
+        <h1 class="text-xl md:text-3xl font-bold text-ibook-brown-900">Analytics</h1>
         <p class="mt-1 text-sm text-ibook-brown-500">Track your performance</p>
       </div>
 
@@ -263,7 +263,7 @@ const topServicesChartOptions = {
           </div>
         </div>
 
-        <!-- Charts -->
+        <!-- Charts — stack vertically on mobile, side by side on desktop -->
         <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
           <!-- Bookings Trend -->
           <div class="bg-white rounded-2xl border border-ibook-brown-100 shadow-sm p-5">
