@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed, watch, onMounted } from 'vue'
+import { ref, computed, watch, onMounted, nextTick } from 'vue'
 import { useRoute } from 'vue-router'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/vue-query'
 import { useToast } from 'vue-toastification'
@@ -30,6 +30,7 @@ const selectedServices = ref<Service[]>([])
 const selectedDate = ref(new Date().toISOString().split('T')[0])
 const selectedSlot = ref('')
 const paymentMethod = ref<'ONLINE' | 'AT_SHOP'>('ONLINE')
+const pendingCheckoutUrl = ref('')
 const bookingResult = ref<AppointmentResult | null>(null)
 const paymentError = ref('')
 
@@ -59,13 +60,15 @@ onMounted(() => {
     const ids = servicesParam.split(',').map(Number).filter(Boolean)
     if (ids.length > 0) {
       // Wait for ServiceSelector to load, then pre-select
+      let unwatched = false
       const unwatch = watch(
         () => serviceSelectorRef.value,
         (selector) => {
-          if (selector) {
+          if (selector && !unwatched) {
             selector.preselectServices(ids)
             step.value = 2
-            unwatch()
+            unwatched = true
+            nextTick(() => unwatch())
           }
         },
         { immediate: true },
@@ -120,9 +123,16 @@ const bookMutation = useMutation({
   }) => api.post('/api/bookings/', payload).then((r) => r.data),
   onSuccess: (data: AppointmentResult) => {
     bookingResult.value = data
-    step.value = 4
     queryClient.invalidateQueries({ queryKey: ['slots'] })
     queryClient.invalidateQueries({ queryKey: ['appointments'] })
+
+    // Online payment: redirect to Stripe checkout instead of showing step 4
+    if (pendingCheckoutUrl.value) {
+      window.location.href = pendingCheckoutUrl.value
+      return
+    }
+
+    step.value = 4
     toast.success('Appointment booked!')
   },
   onError: (error: unknown) => {
@@ -145,8 +155,9 @@ const bookMutation = useMutation({
   },
 })
 
-function handlePayment(data: { payment_method: 'ONLINE' | 'AT_SHOP' }) {
+function handlePayment(data: { payment_method: 'ONLINE' | 'AT_SHOP'; checkoutUrl?: string }) {
   paymentError.value = ''
+  pendingCheckoutUrl.value = data.checkoutUrl ?? ''
   bookMutation.mutate({
     barber_id: barberIdNum.value,
     date: selectedDate.value,

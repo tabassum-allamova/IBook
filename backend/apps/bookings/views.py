@@ -444,19 +444,23 @@ class AppointmentNoShowView(APIView):
         return Response(AppointmentSerializer(appointment).data)
 
 
-class CreatePaymentIntentView(APIView):
+class CreateCheckoutSessionView(APIView):
     """
-    POST /api/bookings/create-payment-intent/
+    POST /api/bookings/create-checkout-session/
 
-    Creates a Stripe PaymentIntent for online payment in UZS.
-    UZS is a zero-decimal currency — pass raw integer amount directly.
-    Returns client_secret for Stripe Elements frontend confirmation.
+    Creates a Stripe Checkout Session — redirects user to Stripe's hosted page.
+    Converts UZS to USD cents for Stripe (UZS not supported).
+    Frontend displays UZS; Stripe processes in USD test mode.
+    Returns the checkout session URL for redirect.
     """
 
     permission_classes = [IsAuthenticated]
 
+    UZS_TO_USD_RATE = 12800  # approximate UZS per USD
+
     def post(self, request):
         amount = request.data.get('amount')
+        description = request.data.get('description', 'Barbershop appointment')
         if not amount or not isinstance(amount, int) or amount <= 0:
             return Response({'detail': 'Invalid amount.'}, status=status.HTTP_400_BAD_REQUEST)
 
@@ -464,13 +468,32 @@ class CreatePaymentIntentView(APIView):
         if not stripe.api_key:
             return Response({'detail': 'Stripe not configured.'}, status=status.HTTP_503_SERVICE_UNAVAILABLE)
 
+        # Convert UZS to USD cents (minimum 50 cents for Stripe)
+        amount_usd_cents = max(50, round(amount / self.UZS_TO_USD_RATE * 100))
+
+        frontend_url = getattr(django_settings, 'FRONTEND_URL', 'http://localhost:5173')
+
         try:
-            intent = stripe.PaymentIntent.create(
-                amount=amount,   # UZS is zero-decimal — pass raw integer
-                currency='uzs',
-                automatic_payment_methods={'enabled': True},
-                metadata={'user_id': request.user.id},
+            session = stripe.checkout.Session.create(
+                mode='payment',
+                payment_method_types=['card'],
+                line_items=[{
+                    'price_data': {
+                        'currency': 'usd',
+                        'product_data': {
+                            'name': description,
+                        },
+                        'unit_amount': amount_usd_cents,
+                    },
+                    'quantity': 1,
+                }],
+                metadata={
+                    'user_id': request.user.id,
+                    'amount_uzs': amount,
+                },
+                success_url=f'{frontend_url}/customer/appointments?payment=success',
+                cancel_url=f'{frontend_url}/customer/appointments?payment=cancelled',
             )
-            return Response({'client_secret': intent.client_secret})
+            return Response({'url': session.url})
         except stripe.error.StripeError as e:
             return Response({'detail': str(e)}, status=status.HTTP_400_BAD_REQUEST)
