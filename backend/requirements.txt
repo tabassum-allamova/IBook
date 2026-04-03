@@ -9,3 +9,5 @@ stripe
 pytest
 pytest-django
 pytest-mock
+python-docx
+matplotlib
