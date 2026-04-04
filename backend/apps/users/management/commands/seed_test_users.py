@@ -1,18 +1,3 @@
-"""
-Management command to seed test users for Playwright E2E tests.
-
-Usage:
-    python manage.py seed_test_users
-
-Creates (or updates) three test users:
-    customer@test.com  / Pass1234!  (CUSTOMER)
-    barber@test.com    / Pass1234!  (BARBER)
-    owner@test.com     / Pass1234!  (SHOP_OWNER)
-
-All users are created with is_active=True and is_email_verified=True
-so they can log in immediately without email verification.
-"""
-
 from django.core.management.base import BaseCommand
 
 from apps.users.models import CustomUser
@@ -57,14 +42,12 @@ class Command(BaseCommand):
             )
             if created:
                 user.set_password(user_data["password"])
-                # Set first/last name from full_name
                 parts = user_data["full_name"].split(" ", 1)
                 user.first_name = parts[0]
                 user.last_name = parts[1] if len(parts) > 1 else ""
                 user.save()
                 self.stdout.write(self.style.SUCCESS(f"  Created: {email} ({user_data['role']})"))
             else:
-                # Update password and ensure active + verified
                 user.set_password(user_data["password"])
                 user.is_active = True
                 user.is_email_verified = True

@@ -36,3 +36,21 @@ htmlcov/
 *.egg-info/
 dist/
 build/
+
+# Planning docs (local only)
+.planning/
+
+# Media uploads
+backend/media/
+
+# Generated reports
+*.docx
+
+# Sample reports
+13836_BISP_Final.docx
+BISP_FinalReport_*.docx
+Untitled form.csv
+
+# Misc
+mirror3d.py
+pose_landmarker.task

@@ -24,7 +24,6 @@ app.use(Toast, {
   hideProgressBar: true,
 })
 
-// Wire up axios store access after pinia is installed
 initAxiosStore(() => useAuthStore())
 
 app.mount('#app')

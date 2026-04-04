@@ -1,23 +1,3 @@
-"""
-Management command to seed a realistic demo dataset for IBook barbershop platform.
-
-Usage:
-    python manage.py seed_demo
-
-Creates (idempotent via get_or_create):
-  - 10 shop owners
-  - 10 barbershops with real Tashkent district coordinates
-  - ShopHours for all 7 days per shop
-  - 50-60 barbers (5-7 per shop) with realistic Uzbek names
-  - 4-6 services per barber with realistic UZS prices
-  - WeeklySchedule for each barber
-  - 20 customers
-  - 10-30 completed appointments per barber (past 90 days, no future dates)
-  - Reviews for ~80% of appointments with weighted star distribution
-
-All existing data is preserved — safe to re-run.
-"""
-
 import random
 from datetime import date, time, timedelta
 
@@ -29,10 +9,6 @@ from apps.services.models import Service, WeeklySchedule
 from apps.bookings.models import Appointment, AppointmentService
 from apps.reviews.models import Review
 
-
-# ---------------------------------------------------------------------------
-# Static data
-# ---------------------------------------------------------------------------
 
 SHOP_DATA = [
     {
@@ -282,7 +258,7 @@ REVIEW_COMMENTS = [
 
 
 def _weighted_rating():
-    """Return a star rating with realistic positive-skewed distribution."""
+    """Skewed toward 4-5 stars like real reviews."""
     r = random.random()
     if r < 0.50:
         return 5
@@ -302,8 +278,7 @@ class Command(BaseCommand):
     def handle(self, *args, **options):
         self.stdout.write(self.style.MIGRATE_HEADING("\n=== IBook Demo Seed ===\n"))
 
-        # Use a fixed seed for reproducibility between re-runs (prices, ratings stay same)
-        random.seed(42)
+        random.seed(42)  # reproducible across re-runs
 
         owners = self._seed_owners()
         shops = self._seed_shops(owners)
@@ -320,10 +295,6 @@ class Command(BaseCommand):
             f"{len(customers)} customers, {appointments} appointments, "
             f"reviews created for ~80% of appointments\n"
         ))
-
-    # ------------------------------------------------------------------
-    # Step 1: Owners
-    # ------------------------------------------------------------------
 
     def _seed_owners(self):
         owners = []
@@ -349,10 +320,6 @@ class Command(BaseCommand):
         self.stdout.write(f"  Owners:    {len(owners)} ready")
         return owners
 
-    # ------------------------------------------------------------------
-    # Step 2: Shops
-    # ------------------------------------------------------------------
-
     def _seed_shops(self, owners):
         shops = []
         for owner, shop_data in zip(owners, SHOP_DATA):
@@ -370,10 +337,6 @@ class Command(BaseCommand):
 
         self.stdout.write(f"  Shops:     {len(shops)} ready")
         return shops
-
-    # ------------------------------------------------------------------
-    # Step 3: Shop hours
-    # ------------------------------------------------------------------
 
     def _seed_shop_hours(self, shops):
         count = 0
@@ -393,10 +356,6 @@ class Command(BaseCommand):
 
         self.stdout.write(f"  ShopHours: {count} rows ready")
 
-    # ------------------------------------------------------------------
-    # Step 4: Barbers
-    # ------------------------------------------------------------------
-
     def _seed_barbers(self, shops):
         barbers = []
         name_iter = iter(BARBER_NAMES)
@@ -408,7 +367,6 @@ class Command(BaseCommand):
                 try:
                     first, last = next(name_iter)
                 except StopIteration:
-                    # Wrap around if we run out of names
                     name_iter = iter(BARBER_NAMES)
                     first, last = next(name_iter)
 
@@ -439,22 +397,15 @@ class Command(BaseCommand):
         self.stdout.write(f"  Barbers:   {len(barbers)} ready")
         return barbers
 
-    # ------------------------------------------------------------------
-    # Step 5: Services
-    # ------------------------------------------------------------------
-
     def _seed_services(self, barbers):
-        """Return dict mapping barber_id -> list of Service objects."""
         barber_services = {}
         total = 0
 
         for barber, _shop in barbers:
-            # Give each barber 4-6 services (randomly pick templates)
             templates = random.sample(SERVICE_TEMPLATES, random.randint(4, 6))
             services = []
             for sort_idx, tmpl in enumerate(templates):
                 lo, hi = tmpl["price_range"]
-                # Round price to nearest 5000 UZS
                 price = round(random.randint(lo, hi) / 5000) * 5000
                 svc, _ = Service.objects.get_or_create(
                     barber=barber,
@@ -471,10 +422,6 @@ class Command(BaseCommand):
 
         self.stdout.write(f"  Services:  {total} ready")
         return barber_services
-
-    # ------------------------------------------------------------------
-    # Step 6: Weekly schedules
-    # ------------------------------------------------------------------
 
     def _seed_weekly_schedules(self, barbers):
         count = 0
@@ -493,10 +440,6 @@ class Command(BaseCommand):
                 count += 1
 
         self.stdout.write(f"  Schedules: {count} rows ready")
-
-    # ------------------------------------------------------------------
-    # Step 7: Customers
-    # ------------------------------------------------------------------
 
     def _seed_customers(self):
         customers = []
@@ -521,16 +464,11 @@ class Command(BaseCommand):
         self.stdout.write(f"  Customers: {len(customers)} ready")
         return customers
 
-    # ------------------------------------------------------------------
-    # Step 8: Appointments
-    # ------------------------------------------------------------------
-
     def _seed_appointments(self, barbers, barber_services, customers):
         today = date.today()
         total_created = 0
         total_skipped = 0
 
-        # Collect all appointments created for review seeding
         self._all_appointments = []
 
         for barber, _shop in barbers:
@@ -540,16 +478,12 @@ class Command(BaseCommand):
 
             appt_count = random.randint(10, 30)
             for _ in range(appt_count):
-                # Past date only — random 1..90 days ago
                 appt_date = today - timedelta(days=random.randint(1, 90))
-
-                # 30-minute aligned slots from 09:00 to 18:00 (last start at 18:00)
-                slot_index = random.randint(0, 17)  # 0=09:00, 17=17:30 (+ 30min = 18:00)
+                slot_index = random.randint(0, 17)
                 hour = 9 + slot_index // 2
                 minute = 30 * (slot_index % 2)
                 start_t = time(hour, minute)
 
-                # Pick 1-2 services
                 num_svcs = random.randint(1, min(2, len(services)))
                 chosen_svcs = random.sample(services, num_svcs)
                 total_price = sum(s.price for s in chosen_svcs)
@@ -594,7 +528,6 @@ class Command(BaseCommand):
                     self._all_appointments.append(appt)
                     total_created += 1
                 else:
-                    # Appointment already existed — still track for review seeding
                     self._all_appointments.append(appt)
                     total_skipped += 1
 
@@ -603,21 +536,14 @@ class Command(BaseCommand):
         )
         return total_created
 
-    # ------------------------------------------------------------------
-    # Step 9: Reviews
-    # ------------------------------------------------------------------
-
     def _seed_reviews(self, appointment_count):
-        # Use all appointments we tracked (created + existing)
         appointments = getattr(self, "_all_appointments", [])
         if not appointments:
-            # Fallback: load all completed appointments from DB
             appointments = list(
                 Appointment.objects.filter(status=Appointment.Status.COMPLETED)
                 .select_related("customer", "barber")
             )
 
-        # Randomly select 70-90% to receive reviews
         review_fraction = random.uniform(0.70, 0.90)
         to_review = random.sample(appointments, int(len(appointments) * review_fraction))
 

@@ -24,7 +24,6 @@ const queryClient = useQueryClient()
 
 const barberIdNum = computed(() => Number(props.barberId))
 
-// Wizard state
 const step = ref(1)
 const selectedServices = ref<Service[]>([])
 const selectedDate = ref(new Date().toISOString().split('T')[0])
@@ -34,7 +33,6 @@ const pendingCheckoutUrl = ref('')
 const bookingResult = ref<AppointmentResult | null>(null)
 const paymentError = ref('')
 
-// Computed helpers
 const selectedServiceIds = computed(() => selectedServices.value.map((s) => s.id))
 
 const totalPrice = computed(() =>
@@ -49,17 +47,14 @@ function formatPrice(amount: number): string {
   return amount.toLocaleString('en-US') + ' UZS'
 }
 
-// Ref to ServiceSelector for reschedule pre-population
 const serviceSelectorRef = ref<InstanceType<typeof ServiceSelector> | null>(null)
 
-// Reschedule pre-population
 onMounted(() => {
   const reschedule = route.query.reschedule === 'true'
   const servicesParam = route.query.services as string | undefined
   if (reschedule && servicesParam) {
     const ids = servicesParam.split(',').map(Number).filter(Boolean)
     if (ids.length > 0) {
-      // Wait for ServiceSelector to load, then pre-select
       let unwatched = false
       const unwatch = watch(
         () => serviceSelectorRef.value,
@@ -77,7 +72,6 @@ onMounted(() => {
   }
 })
 
-// Slot fetching
 const { data: slotsData, isLoading: slotsLoading } = useQuery<{
   slots: string[]
 }>({
@@ -104,7 +98,6 @@ const { data: slotsData, isLoading: slotsLoading } = useQuery<{
 
 const availableSlots = computed(() => slotsData.value?.slots ?? [])
 
-// Clear slot when date changes
 watch(
   () => selectedDate.value,
   () => {
@@ -112,7 +105,6 @@ watch(
   },
 )
 
-// Booking mutation
 const bookMutation = useMutation({
   mutationFn: (payload: {
     barber_id: number
@@ -126,7 +118,6 @@ const bookMutation = useMutation({
     queryClient.invalidateQueries({ queryKey: ['slots'] })
     queryClient.invalidateQueries({ queryKey: ['appointments'] })
 
-    // Online payment: redirect to Stripe checkout instead of showing step 4
     if (pendingCheckoutUrl.value) {
       window.location.href = pendingCheckoutUrl.value
       return
@@ -138,13 +129,11 @@ const bookMutation = useMutation({
   onError: (error: unknown) => {
     const err = error as { response?: { status?: number; data?: { detail?: string } } }
     if (err.response?.status === 409) {
-      // Slot taken - go back to step 2 and refetch
       toast.error('This slot was just booked by someone else. Please pick another time.')
       selectedSlot.value = ''
       step.value = 2
       queryClient.invalidateQueries({ queryKey: ['slots'] })
     } else if (err.response?.status === 400) {
-      // Payment declined or validation error
       const msg = err.response.data?.detail ?? 'Payment declined. Please try again.'
       paymentError.value = msg
       toast.error(msg)
@@ -179,12 +168,10 @@ function handleServicesUpdate(services: Service[]) {
 <template>
   <CustomerLayout>
     <div class="max-w-2xl mx-auto px-4 md:px-8 py-6 md:py-8">
-      <!-- Page header -->
       <h1 class="text-xl md:text-2xl font-bold text-ibook-brown-800 mb-6">
         Book an Appointment
       </h1>
 
-      <!-- Step indicator -->
       <div v-if="step < 4" class="flex items-center gap-2 mb-8">
         <template v-for="s in 3" :key="s">
           <div
@@ -194,7 +181,6 @@ function handleServicesUpdate(services: Service[]) {
         </template>
       </div>
 
-      <!-- Step 1: Service Selection -->
       <div v-if="step === 1">
         <h2 class="text-lg font-semibold text-ibook-brown-800 mb-4">
           Select Services
@@ -217,13 +203,11 @@ function handleServicesUpdate(services: Service[]) {
         </div>
       </div>
 
-      <!-- Step 2: Date & Slot -->
       <div v-else-if="step === 2">
         <h2 class="text-lg font-semibold text-ibook-brown-800 mb-4">
           Pick a Date & Time
         </h2>
 
-        <!-- Summary line -->
         <div class="mb-4 text-sm text-ibook-brown-500">
           {{ selectedServices.length }} service{{ selectedServices.length > 1 ? 's' : '' }}
           &middot; {{ totalDuration }} min &middot; {{ formatPrice(totalPrice) }}
@@ -260,19 +244,16 @@ function handleServicesUpdate(services: Service[]) {
         </div>
       </div>
 
-      <!-- Step 3: Payment -->
       <div v-else-if="step === 3">
         <h2 class="text-lg font-semibold text-ibook-brown-800 mb-4">
           Payment
         </h2>
 
-        <!-- Summary -->
         <div class="mb-4 text-sm text-ibook-brown-500">
           {{ selectedDate }} at {{ selectedSlot }} &middot;
           {{ selectedServices.length }} service{{ selectedServices.length > 1 ? 's' : '' }}
         </div>
 
-        <!-- Payment method selector -->
         <div class="space-y-3 mb-6">
           <label
             class="flex items-center gap-3 p-3 rounded-xl border cursor-pointer transition-colors"
@@ -309,7 +290,6 @@ function handleServicesUpdate(services: Service[]) {
           </label>
         </div>
 
-        <!-- Booking error (from mutation) -->
         <div
           v-if="paymentError"
           class="mb-4 p-3 rounded-lg bg-red-50 border border-red-200 text-red-700 text-sm"
@@ -337,7 +317,6 @@ function handleServicesUpdate(services: Service[]) {
         </div>
       </div>
 
-      <!-- Step 4: Confirmation -->
       <div v-else-if="step === 4 && bookingResult">
         <BookingConfirmation
           :appointment="bookingResult"

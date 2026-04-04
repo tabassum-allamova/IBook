@@ -1,17 +1,8 @@
-"""
-Reviews models.
-
-Review       — one review per appointment (OneToOneField enforces DB constraint)
-ReviewService — per-service rating snapshot linked to a Review
-"""
-
 from django.conf import settings
 from django.db import models
 
 
 class Review(models.Model):
-    """Customer review for a completed appointment."""
-
     appointment = models.OneToOneField(
         'bookings.Appointment',
         on_delete=models.CASCADE,
@@ -41,8 +32,6 @@ class Review(models.Model):
 
 
 class ReviewService(models.Model):
-    """Per-service rating within a review (optional breakdown)."""
-
     review = models.ForeignKey(
         Review,
         on_delete=models.CASCADE,

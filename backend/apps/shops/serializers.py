@@ -1,7 +1,3 @@
-"""
-DRF serializers for the shops domain.
-"""
-
 from datetime import datetime
 
 from rest_framework import serializers
@@ -30,7 +26,6 @@ class BarberServiceSummarySerializer(serializers.ModelSerializer):
 
 
 class BarberSummarySerializer(serializers.Serializer):
-    """Lightweight barber info for shop management page cards."""
     id = serializers.IntegerField()
     full_name = serializers.SerializerMethodField()
     email = serializers.EmailField()
@@ -46,7 +41,6 @@ class BarberSummarySerializer(serializers.Serializer):
 
 
 class MembershipDetailSerializer(serializers.ModelSerializer):
-    """Membership with nested barber detail for the shop management page."""
     barber = BarberSummarySerializer(read_only=True)
 
     class Meta:
@@ -74,13 +68,6 @@ class MembershipSerializer(serializers.ModelSerializer):
 
 
 class ShopListSerializer(serializers.ModelSerializer):
-    """Lightweight shop serializer for the discovery list cards.
-
-    Includes distance_km (from haversine_distance annotation or null),
-    is_open_now (based on current time vs ShopHours), min_price (across
-    all barbers in this shop), and photo (first photo URL or null).
-    """
-
     photo = serializers.SerializerMethodField()
     distance_km = serializers.SerializerMethodField()
     is_open_now = serializers.SerializerMethodField()
@@ -116,7 +103,6 @@ class ShopListSerializer(serializers.ModelSerializer):
             return False
 
     def get_min_price(self, obj) -> int | None:
-        """Minimum service price across all barbers in this shop."""
         result = (
             Service.objects
             .filter(barber__shop_memberships__shop=obj)
@@ -127,7 +113,6 @@ class ShopListSerializer(serializers.ModelSerializer):
         return result
 
     def get_avg_rating(self, obj) -> float | None:
-        """Returns average rating aggregated across all barbers in this shop."""
         from django.db.models import Avg
         from apps.reviews.models import Review
         result = Review.objects.filter(

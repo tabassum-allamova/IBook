@@ -1,14 +1,3 @@
-"""
-Services and availability API views.
-
-Provides:
-  - ServiceListCreateView   GET/POST  /api/services/
-  - ServiceReorderView      PATCH     /api/services/reorder/
-  - WeeklyScheduleView      GET/PUT   /api/availability/schedule/
-  - DateBlockListCreateView GET/POST  /api/availability/blocks/
-  - DateBlockDetailView     DELETE    /api/availability/blocks/<pk>/
-"""
-
 from django.db import transaction
 from rest_framework import status
 from rest_framework.request import Request
@@ -26,11 +15,6 @@ from .serializers import (
 
 
 class ServiceListCreateView(APIView):
-    """
-    GET  /api/services/ — list the authenticated barber's services (ordered by sort_order)
-    POST /api/services/ — create a new service for the authenticated barber
-    """
-
     permission_classes = [IsBarber]
 
     def get(self, request: Request) -> Response:
@@ -46,11 +30,6 @@ class ServiceListCreateView(APIView):
 
 
 class ServiceDetailView(APIView):
-    """
-    PATCH  /api/services/<pk>/ — update a service (barber must own it)
-    DELETE /api/services/<pk>/ — delete a service (barber must own it)
-    """
-
     permission_classes = [IsBarber]
 
     def _get_service(self, request, pk):
@@ -77,13 +56,6 @@ class ServiceDetailView(APIView):
 
 
 class ServiceReorderView(APIView):
-    """
-    PATCH /api/services/reorder/ — bulk-update sort_order for the barber's services.
-
-    Accepts a list of {id, sort_order} objects. Each service is verified to belong
-    to the requesting barber before updating.
-    """
-
     permission_classes = [IsBarber]
 
     def patch(self, request: Request) -> Response:
@@ -108,18 +80,9 @@ class ServiceReorderView(APIView):
 
 
 class WeeklyScheduleView(APIView):
-    """
-    GET /api/availability/schedule/ — return all 7 schedule rows for the barber.
-      Auto-creates missing rows so the response always contains exactly 7 items.
-
-    PUT /api/availability/schedule/ — bulk-save 7-day schedule via update_or_create.
-      Accepts 'weekday' or 'day_of_week' key in each row.
-    """
-
     permission_classes = [IsBarber]
 
     def _ensure_all_days(self, barber) -> None:
-        """Create missing WeeklySchedule rows for the barber (0-6)."""
         existing_days = set(
             WeeklySchedule.objects.filter(barber=barber).values_list('day_of_week', flat=True)
         )
@@ -147,7 +110,6 @@ class WeeklyScheduleView(APIView):
         result = []
         with transaction.atomic():
             for row in rows:
-                # Support both 'weekday' and 'day_of_week' keys
                 day = row.get('weekday') if row.get('weekday') is not None else row.get('day_of_week')
                 if day is None:
                     return Response(
@@ -173,13 +135,6 @@ class WeeklyScheduleView(APIView):
 
 
 class DateBlockListCreateView(APIView):
-    """
-    GET  /api/availability/blocks/ — list the barber's date blocks
-    POST /api/availability/blocks/ — create a new date block
-      Full-day: omit block_start and block_end (or set to null)
-      Partial:  provide both block_start and block_end
-    """
-
     permission_classes = [IsBarber]
 
     def get(self, request: Request) -> Response:
@@ -195,10 +150,6 @@ class DateBlockListCreateView(APIView):
 
 
 class DateBlockDetailView(APIView):
-    """
-    DELETE /api/availability/blocks/<pk>/ — delete a date block (barber must own it)
-    """
-
     permission_classes = [IsBarber]
 
     def delete(self, request: Request, pk: int) -> Response:

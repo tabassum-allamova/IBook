@@ -1,24 +1,9 @@
-"""
-Django settings for IBook backend.
-
-Reads secrets from .env via python-decouple.
-For production deployment on Render, set environment variables directly.
-"""
-
 from datetime import timedelta
 from pathlib import Path
 
 from decouple import Csv, config
 
-# ---------------------------------------------------------------------------
-# Paths
-# ---------------------------------------------------------------------------
-
 BASE_DIR = Path(__file__).resolve().parent.parent
-
-# ---------------------------------------------------------------------------
-# Core security
-# ---------------------------------------------------------------------------
 
 SECRET_KEY = config("SECRET_KEY", default="django-insecure-change-me-in-production-asap")
 
@@ -26,15 +11,7 @@ DEBUG = config("DEBUG", default=True, cast=bool)
 
 ALLOWED_HOSTS = config("ALLOWED_HOSTS", default="localhost,127.0.0.1", cast=Csv())
 
-# ---------------------------------------------------------------------------
-# Custom User model — MUST be set before any migration runs
-# ---------------------------------------------------------------------------
-
 AUTH_USER_MODEL = "users.CustomUser"
-
-# ---------------------------------------------------------------------------
-# Application definition
-# ---------------------------------------------------------------------------
 
 INSTALLED_APPS = [
     # Django contrib
@@ -55,10 +32,6 @@ INSTALLED_APPS = [
     "apps.bookings",
     "apps.reviews",
 ]
-
-# ---------------------------------------------------------------------------
-# Middleware — CorsMiddleware MUST be first
-# ---------------------------------------------------------------------------
 
 MIDDLEWARE = [
     "corsheaders.middleware.CorsMiddleware",
@@ -91,10 +64,6 @@ TEMPLATES = [
 
 WSGI_APPLICATION = "config.wsgi.application"
 
-# ---------------------------------------------------------------------------
-# Database — SQLite for local dev; PostgreSQL on Render via DATABASE_URL
-# ---------------------------------------------------------------------------
-
 DATABASE_URL = config("DATABASE_URL", default=None)
 
 if DATABASE_URL:
@@ -109,10 +78,6 @@ else:
         }
     }
 
-# ---------------------------------------------------------------------------
-# Password validation
-# ---------------------------------------------------------------------------
-
 AUTH_PASSWORD_VALIDATORS = [
     {"NAME": "django.contrib.auth.password_validation.UserAttributeSimilarityValidator"},
     {"NAME": "django.contrib.auth.password_validation.MinimumLengthValidator"},
@@ -120,34 +85,18 @@ AUTH_PASSWORD_VALIDATORS = [
     {"NAME": "django.contrib.auth.password_validation.NumericPasswordValidator"},
 ]
 
-# ---------------------------------------------------------------------------
-# Internationalisation
-# ---------------------------------------------------------------------------
-
 LANGUAGE_CODE = "en-us"
 TIME_ZONE = "Asia/Tashkent"
 USE_I18N = True
 USE_TZ = True
 
-# ---------------------------------------------------------------------------
-# Static files
-# ---------------------------------------------------------------------------
-
 STATIC_URL = "static/"
 STATIC_ROOT = BASE_DIR / "staticfiles"
-
-# ---------------------------------------------------------------------------
-# Media files — user uploads (shop photos, barber avatars)
-# ---------------------------------------------------------------------------
 
 MEDIA_URL = '/media/'
 MEDIA_ROOT = BASE_DIR / 'media'
 
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
-
-# ---------------------------------------------------------------------------
-# CORS — allow Next.js dev server; NOT a wildcard
-# ---------------------------------------------------------------------------
 
 CORS_ALLOW_CREDENTIALS = True
 CORS_ALLOWED_ORIGINS = config(
@@ -155,10 +104,6 @@ CORS_ALLOWED_ORIGINS = config(
     default="http://localhost:3000,http://localhost:5173",
     cast=Csv(),
 )
-
-# ---------------------------------------------------------------------------
-# Django REST Framework
-# ---------------------------------------------------------------------------
 
 REST_FRAMEWORK = {
     "DEFAULT_AUTHENTICATION_CLASSES": (
@@ -168,10 +113,6 @@ REST_FRAMEWORK = {
         "rest_framework.permissions.IsAuthenticated",
     ),
 }
-
-# ---------------------------------------------------------------------------
-# SimpleJWT configuration
-# ---------------------------------------------------------------------------
 
 SIMPLE_JWT = {
     "ACCESS_TOKEN_LIFETIME": timedelta(minutes=15),
@@ -183,10 +124,6 @@ SIMPLE_JWT = {
     "AUTH_TOKEN_CLASSES": ("rest_framework_simplejwt.tokens.AccessToken",),
 }
 
-# ---------------------------------------------------------------------------
-# Email — Gmail SMTP with App Password
-# ---------------------------------------------------------------------------
-
 EMAIL_BACKEND = "django.core.mail.backends.smtp.EmailBackend"
 EMAIL_HOST = "smtp.gmail.com"
 EMAIL_PORT = 587
@@ -195,19 +132,10 @@ EMAIL_HOST_USER = config("EMAIL_HOST_USER", default="")
 EMAIL_HOST_PASSWORD = config("EMAIL_HOST_PASSWORD", default="")
 DEFAULT_FROM_EMAIL = config("DEFAULT_FROM_EMAIL", default="")
 
-# When no email credentials configured, fall back to console backend (local dev)
 if not EMAIL_HOST_USER or not EMAIL_HOST_PASSWORD:
     EMAIL_BACKEND = "django.core.mail.backends.console.EmailBackend"
 
-# ---------------------------------------------------------------------------
-# Frontend URL — used in email verification links
-# ---------------------------------------------------------------------------
-
 FRONTEND_URL = config("FRONTEND_URL", default="http://localhost:5173")
-
-# ---------------------------------------------------------------------------
-# Stripe — test-mode payment processing
-# ---------------------------------------------------------------------------
 
 STRIPE_SECRET_KEY = config('STRIPE_SECRET_KEY', default='')
 STRIPE_PUBLISHABLE_KEY = config('STRIPE_PUBLISHABLE_KEY', default='')

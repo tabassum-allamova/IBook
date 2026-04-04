@@ -1,10 +1,3 @@
-"""
-Reviews API views.
-
-ReviewCreateView      — POST /api/reviews/
-BarberReviewListView  — GET  /api/reviews/barber/<int:pk>/
-"""
-
 from django.db.models import Avg, Count, Q
 from rest_framework import status
 from rest_framework.permissions import IsAuthenticated
@@ -18,14 +11,6 @@ from apps.users.permissions import IsCustomer
 
 
 class ReviewCreateView(APIView):
-    """
-    POST /api/reviews/
-
-    Creates a review for a completed appointment owned by the authenticated customer.
-    Returns 404 if appointment not found, not completed, or not owned by the customer.
-    Returns 400 if a review already exists for that appointment.
-    """
-
     permission_classes = [IsCustomer]
 
     def post(self, request):
@@ -33,7 +18,6 @@ class ReviewCreateView(APIView):
         serializer.is_valid(raise_exception=True)
         data = serializer.validated_data
 
-        # Look up appointment: must belong to this customer and be COMPLETED
         try:
             appointment = Appointment.objects.select_related('barber').get(
                 pk=data['appointment_id'],
@@ -46,14 +30,12 @@ class ReviewCreateView(APIView):
                 status=status.HTTP_404_NOT_FOUND,
             )
 
-        # Enforce one review per appointment
         if hasattr(appointment, 'review'):
             return Response(
                 {'detail': 'Review already submitted for this appointment.'},
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
-        # Create review
         review = Review.objects.create(
             appointment=appointment,
             reviewer=request.user,
@@ -62,7 +44,6 @@ class ReviewCreateView(APIView):
             text=data.get('text', ''),
         )
 
-        # Create per-service ratings if provided
         for svc in data.get('service_ratings', []):
             service_name = svc.get('service_name', '')
             svc_rating = svc.get('rating')
@@ -77,25 +58,11 @@ class ReviewCreateView(APIView):
 
 
 class BarberReviewListView(APIView):
-    """
-    GET /api/reviews/barber/<int:pk>/
-
-    Returns aggregated review stats and recent reviews for a barber.
-    Response shape:
-    {
-        avg_rating: float | null,
-        total_reviews: int,
-        distribution: {5: N, 4: N, 3: N, 2: N, 1: N},
-        recent_reviews: [{reviewer, rating, text, date}, ...]
-    }
-    """
-
     permission_classes = [IsAuthenticated]
 
     def get(self, request, pk):
         qs = Review.objects.filter(barber_id=pk).select_related('reviewer')
 
-        # Aggregate stats
         agg = qs.aggregate(
             avg=Avg('rating'),
             total=Count('id'),

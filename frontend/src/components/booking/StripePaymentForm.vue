@@ -30,7 +30,6 @@ async function onPayOnline() {
     })
 
     if (response.data.url) {
-      // Emit confirm with checkout URL — BookingPage creates booking then redirects
       emit('confirm', { payment_method: 'ONLINE', checkoutUrl: response.data.url })
     }
   } catch (err: unknown) {
@@ -49,7 +48,6 @@ function onConfirmAtShop() {
 
 <template>
   <div class="space-y-6">
-    <!-- Total price display -->
     <div class="text-center">
       <div class="text-sm text-ibook-brown-400">Total</div>
       <div class="text-2xl font-bold text-ibook-brown-800">
@@ -57,7 +55,6 @@ function onConfirmAtShop() {
       </div>
     </div>
 
-    <!-- AT_SHOP payment -->
     <div v-if="props.paymentMethod === 'AT_SHOP'" class="space-y-4">
       <div
         class="flex items-center gap-3 p-4 rounded-xl border border-ibook-gold-400 bg-ibook-brown-50"
@@ -90,7 +87,6 @@ function onConfirmAtShop() {
       </button>
     </div>
 
-    <!-- ONLINE payment -->
     <div v-else-if="props.paymentMethod === 'ONLINE'" class="space-y-4">
       <div
         class="flex items-center gap-3 p-4 rounded-xl border border-ibook-brown-200 bg-ibook-brown-50"
@@ -114,7 +110,6 @@ function onConfirmAtShop() {
         </p>
       </div>
 
-      <!-- Error -->
       <div
         v-if="errorMessage"
         class="p-3 rounded-lg bg-red-50 border border-red-200 text-red-700 text-sm"

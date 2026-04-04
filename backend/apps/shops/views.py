@@ -1,18 +1,3 @@
-"""
-DRF API views for the shops domain.
-
-Endpoints:
-    POST   /api/shops/                         — ShopCreateView
-    GET    /api/shops/my/                      — ShopMeView
-    GET    /api/shops/<shop_id>/               — ShopDetailView
-    PATCH  /api/shops/<shop_id>/               — ShopDetailView
-    PUT    /api/shops/<shop_id>/hours/         — ShopHoursView
-    POST   /api/shops/<shop_id>/photos/        — ShopPhotoView
-    DELETE /api/shops/<shop_id>/photos/<id>/   — ShopPhotoView
-    POST   /api/shops/<shop_id>/members/       — MembershipView
-    DELETE /api/shops/<shop_id>/members/<id>/  — MembershipView
-"""
-
 from django.shortcuts import get_object_or_404
 from rest_framework.parsers import FormParser, MultiPartParser
 from rest_framework.permissions import IsAuthenticated
@@ -28,35 +13,15 @@ from .utils import annotate_distance
 
 
 class ShopListView(APIView):
-    """
-    GET /api/shops/ — list all shops with optional distance annotation and name filter.
-
-    Query params:
-        lat (float, optional): User latitude for Haversine distance annotation
-        lng (float, optional): User longitude for Haversine distance annotation
-        name (str, optional): Case-insensitive partial match on shop name
-
-    When lat+lng provided:
-        - Returns only shops with non-null coordinates
-        - Annotates each shop with haversine_distance
-        - Orders results by distance ascending
-
-    When lat/lng omitted:
-        - Returns all shops (including those without coordinates)
-        - distance_km is null for all shops
-    """
-
     permission_classes = [IsAuthenticated]
 
     def get(self, request):
         queryset = Shop.objects.all()
 
-        # Apply name filter if provided
         name = request.query_params.get('name')
         if name:
             queryset = queryset.filter(name__icontains=name)
 
-        # Apply distance annotation if coordinates are provided
         lat_param = request.query_params.get('lat')
         lng_param = request.query_params.get('lng')
 
@@ -72,8 +37,6 @@ class ShopListView(APIView):
         return Response(serializer.data)
 
     def post(self, request):
-        """POST /api/shops/ — create a new shop for the authenticated owner."""
-        # Delegate permission check: only shop owners can create
         from apps.users.permissions import IsShopOwner as _IsShopOwner
         permission = _IsShopOwner()
         if not permission.has_permission(request, self):
@@ -86,12 +49,6 @@ class ShopListView(APIView):
 
 
 class ShopCreateView(APIView):
-    """
-    POST /api/shops/create/ — create a new shop for the authenticated owner.
-
-    Kept for backward compatibility; ShopListView at path('') also handles POST /api/shops/.
-    """
-
     permission_classes = [IsShopOwner]
 
     def post(self, request):
@@ -102,8 +59,6 @@ class ShopCreateView(APIView):
 
 
 class ShopMeView(APIView):
-    """GET /api/shops/my/ — return the shop owned by the authenticated user."""
-
     permission_classes = [IsShopOwner]
 
     def get(self, request):
@@ -116,11 +71,6 @@ class ShopMeView(APIView):
 
 
 class ShopDetailView(APIView):
-    """
-    GET  /api/shops/<shop_id>/ — retrieve shop detail (any authenticated user).
-    PATCH /api/shops/<shop_id>/ — update shop (owner only, object-level check).
-    """
-
     def get_permissions(self):
         if self.request.method == 'PATCH':
             return [IsShopOwner()]
@@ -142,8 +92,6 @@ class ShopDetailView(APIView):
 
 
 class ShopHoursView(APIView):
-    """PUT /api/shops/<shop_id>/hours/ — bulk-upsert operating hours."""
-
     permission_classes = [IsShopOwner]
 
     def put(self, request, shop_id):
@@ -166,11 +114,6 @@ class ShopHoursView(APIView):
 
 
 class ShopPhotoView(APIView):
-    """
-    POST   /api/shops/<shop_id>/photos/           — upload photo (max 5).
-    DELETE /api/shops/<shop_id>/photos/<photo_id>/ — delete photo.
-    """
-
     permission_classes = [IsShopOwner]
     parser_classes = [MultiPartParser, FormParser]
 
@@ -201,11 +144,6 @@ class ShopPhotoView(APIView):
 
 
 class MembershipView(APIView):
-    """
-    POST   /api/shops/<shop_id>/members/              — add a barber.
-    DELETE /api/shops/<shop_id>/members/<barber_id>/  — remove a barber.
-    """
-
     permission_classes = [IsShopOwner]
 
     def post(self, request, shop_id):

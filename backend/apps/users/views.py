@@ -1,18 +1,3 @@
-"""
-IBook auth API views.
-
-Provides:
-  - CustomerRegisterView
-  - ProfessionalRegisterView
-  - VerifyEmailView
-  - LoginView
-  - LogoutView
-  - CookieTokenRefreshView
-  - ProfileView
-
-All views live under the /api/auth/ prefix (configured in config/urls.py).
-"""
-
 from django.conf import settings
 from django.core.mail import send_mail
 from django.core.signing import BadSignature, SignatureExpired, TimestampSigner
@@ -42,11 +27,9 @@ _REFRESH_MAX_AGE = 60 * 60 * 24 * 7  # 7 days in seconds
 
 
 def _send_verification_email(user: CustomUser) -> None:
-    """Sign the user PK and email a verification link. Runs in a thread to avoid blocking."""
     import threading
 
     token = _signer.sign(user.pk)
-    # Link goes directly to Django API which verifies and redirects to login
     verify_url = f"http://localhost:8000/api/auth/verify-email/?token={token}"
 
     def _send():
@@ -62,7 +45,6 @@ def _send_verification_email(user: CustomUser) -> None:
 
 
 def _set_refresh_cookie(response: Response, refresh_token: str) -> None:
-    """Attach an httpOnly refresh cookie to *response*."""
     response.set_cookie(
         key=_REFRESH_COOKIE,
         value=refresh_token,
@@ -73,14 +55,7 @@ def _set_refresh_cookie(response: Response, refresh_token: str) -> None:
     )
 
 
-# ---------------------------------------------------------------------------
-# Registration
-# ---------------------------------------------------------------------------
-
-
 class CustomerRegisterView(APIView):
-    """POST /api/auth/register/customer/ — create a customer account."""
-
     permission_classes = [AllowAny]
 
     def post(self, request: Request) -> Response:
@@ -95,8 +70,6 @@ class CustomerRegisterView(APIView):
 
 
 class ProfessionalRegisterView(APIView):
-    """POST /api/auth/register/professional/ — create a barber or shop-owner account."""
-
     permission_classes = [AllowAny]
 
     def post(self, request: Request) -> Response:
@@ -110,14 +83,7 @@ class ProfessionalRegisterView(APIView):
         )
 
 
-# ---------------------------------------------------------------------------
-# Email verification
-# ---------------------------------------------------------------------------
-
-
 class VerifyEmailView(APIView):
-    """GET /api/auth/verify-email/?token=... — activate account after email link click."""
-
     permission_classes = [AllowAny]
 
     def get(self, request: Request) -> Response:
@@ -128,8 +94,7 @@ class VerifyEmailView(APIView):
                 status=status.HTTP_400_BAD_REQUEST,
             )
         try:
-            # 24-hour expiry
-            user_pk = _signer.unsign(token, max_age=86400)
+            user_pk = _signer.unsign(token, max_age=86400)  # 24h expiry
         except SignatureExpired:
             return Response(
                 {"detail": "Verification link has expired."},
@@ -150,19 +115,11 @@ class VerifyEmailView(APIView):
         user.is_active = True
         user.is_email_verified = True
         user.save(update_fields=["is_active", "is_email_verified"])
-        # Redirect to frontend login page with success message
         from django.shortcuts import redirect
         return redirect(f"{settings.FRONTEND_URL}/login?verified=true")
 
 
-# ---------------------------------------------------------------------------
-# Login
-# ---------------------------------------------------------------------------
-
-
 class LoginView(APIView):
-    """POST /api/auth/login/ — obtain JWT pair; refresh token goes into httpOnly cookie."""
-
     permission_classes = [AllowAny]
 
     def post(self, request: Request) -> Response:
@@ -193,14 +150,7 @@ class LoginView(APIView):
         return response
 
 
-# ---------------------------------------------------------------------------
-# Logout
-# ---------------------------------------------------------------------------
-
-
 class LogoutView(APIView):
-    """POST /api/auth/logout/ — blacklist the refresh token and clear the cookie."""
-
     permission_classes = [IsAuthenticated]
 
     def post(self, request: Request) -> Response:
@@ -217,19 +167,7 @@ class LogoutView(APIView):
         return response
 
 
-# ---------------------------------------------------------------------------
-# Token refresh (reads from cookie)
-# ---------------------------------------------------------------------------
-
-
 class CookieTokenRefreshView(APIView):
-    """
-    POST /api/auth/token/refresh/
-
-    Reads the refresh token from the httpOnly cookie instead of the request body.
-    Returns a new access token in the response body and sets a new refresh cookie.
-    """
-
     permission_classes = [AllowAny]
 
     def post(self, request: Request, *args, **kwargs) -> Response:
@@ -253,7 +191,6 @@ class CookieTokenRefreshView(APIView):
             {"access": serializer.validated_data["access"]},
             status=status.HTTP_200_OK,
         )
-        # Set new refresh cookie if rotation produced a new refresh token
         new_refresh = serializer.validated_data.get("refresh")
         if new_refresh:
             _set_refresh_cookie(response, new_refresh)
@@ -261,17 +198,8 @@ class CookieTokenRefreshView(APIView):
         return response
 
 
-# ---------------------------------------------------------------------------
-# Stub views for permission testing (Phase 3 will replace with real implementations)
-# ---------------------------------------------------------------------------
-
-
 class BarberDashboardStubView(APIView):
-    """GET /api/barbers/dashboard/ — stub endpoint to test IsBarber permission.
-    Phase 3 will replace this with the real barber dashboard view.
-    """
-
-    from apps.users.permissions import IsBarber  # forward reference resolved at class time
+    from apps.users.permissions import IsBarber
 
     permission_classes = [IsBarber]
 
@@ -280,11 +208,7 @@ class BarberDashboardStubView(APIView):
 
 
 class ShopOwnerDashboardStubView(APIView):
-    """GET /api/shops/dashboard/ — stub endpoint to test IsShopOwner permission.
-    Phase 3 will replace this with the real shop owner dashboard view.
-    """
-
-    from apps.users.permissions import IsShopOwner  # forward reference resolved at class time
+    from apps.users.permissions import IsShopOwner
 
     permission_classes = [IsShopOwner]
 
@@ -292,14 +216,7 @@ class ShopOwnerDashboardStubView(APIView):
         return Response({"detail": "Shop owner dashboard (stub)"}, status=status.HTTP_200_OK)
 
 
-# ---------------------------------------------------------------------------
-# Profile
-# ---------------------------------------------------------------------------
-
-
 class ProfileView(RetrieveUpdateAPIView):
-    """GET/PATCH /api/auth/profile/ — read or update the authenticated user's profile."""
-
     permission_classes = [IsAuthenticated]
     parser_classes = [MultiPartParser, FormParser]
     serializer_class = UserProfileSerializer
@@ -308,23 +225,11 @@ class ProfileView(RetrieveUpdateAPIView):
         return self.request.user  # type: ignore[return-value]
 
     def update(self, request: Request, *args, **kwargs) -> Response:
-        kwargs["partial"] = True  # Always partial — PATCH semantics
+        kwargs["partial"] = True
         return super().update(request, *args, **kwargs)
 
 
-# ---------------------------------------------------------------------------
-# Barber profile (Phase 4 - Discovery)
-# ---------------------------------------------------------------------------
-
-
 class BarberProfileView(APIView):
-    """
-    GET /api/barbers/<pk>/ — retrieve full barber profile.
-
-    Accessible to any authenticated user (customer, barber, or shop owner).
-    Returns 404 if the user does not exist or is not a barber.
-    """
-
     permission_classes = [IsAuthenticated]
 
     def get(self, request: Request, pk: int) -> Response:

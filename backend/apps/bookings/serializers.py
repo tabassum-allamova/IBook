@@ -1,18 +1,9 @@
-"""
-Booking serializers.
-
-Provides serializers for booking creation, appointment detail/listing,
-and supporting nested representations.
-"""
-
 from rest_framework import serializers
 
 from apps.bookings.models import Appointment, AppointmentService
 
 
 class BookingCreateSerializer(serializers.Serializer):
-    """Validates input for POST /api/bookings/."""
-
     barber_id = serializers.IntegerField()
     date = serializers.DateField()
     start_time = serializers.TimeField(format='%H:%M', input_formats=['%H:%M', '%H:%M:%S'])
@@ -24,8 +15,6 @@ class BookingCreateSerializer(serializers.Serializer):
 
 
 class AppointmentServiceSerializer(serializers.ModelSerializer):
-    """Read-only nested representation of a service snapshot within an appointment."""
-
     service_id = serializers.IntegerField(read_only=True)
 
     class Meta:
@@ -34,12 +23,6 @@ class AppointmentServiceSerializer(serializers.ModelSerializer):
 
 
 class AppointmentSerializer(serializers.ModelSerializer):
-    """
-    Read-only serializer for booking creation response and detail views.
-
-    Returns barber as PK integer for simple consumption by frontend.
-    """
-
     services = AppointmentServiceSerializer(source='appointment_services', many=True, read_only=True)
     start_time = serializers.TimeField(format='%H:%M')
     end_time = serializers.TimeField(format='%H:%M')
@@ -54,10 +37,6 @@ class AppointmentSerializer(serializers.ModelSerializer):
 
 
 class AppointmentListSerializer(serializers.ModelSerializer):
-    """
-    Serializer for listing views -- includes shop info via barber membership.
-    """
-
     services = AppointmentServiceSerializer(source='appointment_services', many=True, read_only=True)
     start_time = serializers.TimeField(format='%H:%M')
     end_time = serializers.TimeField(format='%H:%M')
@@ -78,7 +57,6 @@ class AppointmentListSerializer(serializers.ModelSerializer):
         ]
 
     def _get_shop(self, obj):
-        """Get the shop from barber's membership (cached)."""
         membership = obj.barber.shop_memberships.select_related('shop').first()
         return membership.shop if membership else None
 

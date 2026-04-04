@@ -1,14 +1,3 @@
-"""
-IBook authentication serializers.
-
-Provides:
-  - CustomerRegisterSerializer
-  - ProfessionalRegisterSerializer
-  - CustomTokenObtainPairSerializer
-  - UserProfileSerializer
-  - BarberProfileSerializer
-"""
-
 import re
 
 from rest_framework import serializers
@@ -19,7 +8,6 @@ from apps.users.models import CustomUser
 
 
 def _validate_password_strength(password: str) -> str:
-    """Shared password validator: min 8 chars, at least one letter and one number."""
     if len(password) < 8:
         raise serializers.ValidationError("Password must be at least 8 characters long.")
     if not re.search(r"[a-zA-Z]", password):
@@ -30,7 +18,6 @@ def _validate_password_strength(password: str) -> str:
 
 
 def _split_full_name(full_name: str) -> tuple[str, str]:
-    """Split 'full_name' into (first_name, last_name). Handle single-word names."""
     parts = full_name.strip().split(" ", 1)
     first_name = parts[0]
     last_name = parts[1] if len(parts) > 1 else ""
@@ -38,8 +25,6 @@ def _split_full_name(full_name: str) -> tuple[str, str]:
 
 
 class CustomerRegisterSerializer(serializers.Serializer):
-    """Serializer for customer registration."""
-
     email = serializers.EmailField()
     password = serializers.CharField(write_only=True, min_length=8)
     full_name = serializers.CharField(max_length=150)
@@ -74,8 +59,6 @@ class CustomerRegisterSerializer(serializers.Serializer):
 
 
 class ProfessionalRegisterSerializer(serializers.Serializer):
-    """Serializer for barber / shop-owner registration."""
-
     ALLOWED_ROLES = [CustomUser.Role.BARBER, CustomUser.Role.SHOP_OWNER]
 
     email = serializers.EmailField()
@@ -113,8 +96,6 @@ class ProfessionalRegisterSerializer(serializers.Serializer):
 
 
 class CustomTokenObtainPairSerializer(TokenObtainPairSerializer):
-    """JWT serializer that embeds role, email, and full_name into the access token."""
-
     @classmethod
     def get_token(cls, user: CustomUser):  # type: ignore[override]
         token = super().get_token(user)
@@ -134,14 +115,6 @@ class CustomTokenObtainPairSerializer(TokenObtainPairSerializer):
 
 
 class UserProfileSerializer(serializers.ModelSerializer):
-    """
-    Serializer for reading and updating a user's profile.
-
-    Read: all profile fields.
-    Write (PATCH): first_name, last_name, phone_number, avatar, bio, years_of_experience.
-    Role is always read-only.
-    """
-
     full_name = serializers.SerializerMethodField()
 
     class Meta:
@@ -167,13 +140,6 @@ class UserProfileSerializer(serializers.ModelSerializer):
 
 
 class BarberProfileSerializer(serializers.Serializer):
-    """
-    Full barber profile for the customer-facing barber profile page.
-
-    Aggregates data from CustomUser, Service, WeeklySchedule, and BarberShopMembership.
-    avg_rating is a placeholder returning None until Phase 5 adds the Review model.
-    """
-
     id = serializers.IntegerField()
     full_name = serializers.SerializerMethodField()
     avatar = serializers.SerializerMethodField()
@@ -226,7 +192,6 @@ class BarberProfileSerializer(serializers.Serializer):
         return membership.shop.name if membership else None
 
     def get_avg_rating(self, obj: CustomUser) -> float | None:
-        """Returns average barber rating from Review model."""
         from django.db.models import Avg
         from apps.reviews.models import Review
         result = Review.objects.filter(barber=obj).aggregate(avg=Avg('rating'))['avg']

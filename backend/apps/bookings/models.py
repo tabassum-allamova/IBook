@@ -72,7 +72,7 @@ class Appointment(models.Model):
 
 
 class AppointmentService(models.Model):
-    """Through table -- snapshots service name, price, duration at booking time."""
+    """Snapshots service info at booking time."""
 
     appointment = models.ForeignKey(
         Appointment,

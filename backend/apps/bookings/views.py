@@ -1,10 +1,3 @@
-"""
-Booking API views.
-
-Provides endpoints for slot availability, booking creation, appointment management,
-and a customer-facing barber services read endpoint.
-"""
-
 import datetime
 
 import stripe
@@ -30,13 +23,7 @@ from apps.users.permissions import IsBarber, IsCustomer
 
 
 class BarberServicesPublicView(APIView):
-    """
-    GET /api/bookings/barber-services/?barber_id=X
-
-    Returns a barber's service catalog for customers (read-only).
-    Phase 2's /api/services/ uses IsBarber permission, so customers need
-    this alternative endpoint to see services during booking.
-    """
+    """Read-only service list for customers (the main /api/services/ requires IsBarber)."""
 
     permission_classes = [IsAuthenticated]
 
@@ -71,12 +58,6 @@ class BarberServicesPublicView(APIView):
 
 
 class AvailableSlotsView(APIView):
-    """
-    GET /api/bookings/slots/?barber_id=X&date=YYYY-MM-DD&service_ids=1,2,3
-
-    Returns available time slots for a barber on a given date.
-    """
-
     permission_classes = [IsAuthenticated]
 
     def get(self, request):
@@ -84,7 +65,6 @@ class AvailableSlotsView(APIView):
         date_str = request.query_params.get('date')
         service_ids_str = request.query_params.get('service_ids', '')
 
-        # Validate required params
         if not barber_id or not date_str:
             return Response(
                 {'detail': 'barber_id and date query parameters are required.'},
@@ -100,12 +80,10 @@ class AvailableSlotsView(APIView):
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
-        # Reject past dates
         today = timezone.localdate()
         if target_date < today:
             return Response({'slots': []})
 
-        # Parse service_ids and compute total duration
         service_ids = []
         if service_ids_str:
             try:
@@ -120,9 +98,8 @@ class AvailableSlotsView(APIView):
             services = Service.objects.filter(pk__in=service_ids, barber_id=barber_id)
             duration_minutes = sum(s.duration_minutes for s in services)
         else:
-            duration_minutes = 30  # Default duration if no services specified
+            duration_minutes = 30  # default if no services picked
 
-        # Fetch schedule for the day of week (Monday=0)
         day_of_week = target_date.weekday()
         try:
             schedule = WeeklySchedule.objects.get(barber_id=barber_id, day_of_week=day_of_week)
@@ -132,10 +109,9 @@ class AvailableSlotsView(APIView):
         if not schedule.is_working:
             return Response({'slots': []})
 
-        # Check date blocks
         date_blocks = DateBlock.objects.filter(barber_id=barber_id, date=target_date)
 
-        # Full-day block: block_start and block_end are both null
+        # full-day block = both start/end null
         for block in date_blocks:
             if block.block_start is None and block.block_end is None:
                 return Response({'slots': []})
@@ -146,7 +122,6 @@ class AvailableSlotsView(APIView):
             if b.block_start is not None and b.block_end is not None
         ]
 
-        # Fetch existing CONFIRMED appointments as booked ranges
         booked = Appointment.objects.filter(
             barber_id=barber_id,
             date=target_date,
@@ -154,7 +129,6 @@ class AvailableSlotsView(APIView):
         ).values_list('start_time', 'end_time')
         booked_ranges = list(booked)
 
-        # Compute slots
         slots = compute_available_slots(
             schedule_start=schedule.start_time,
             schedule_end=schedule.end_time,
@@ -166,7 +140,7 @@ class AvailableSlotsView(APIView):
             duration_minutes=duration_minutes,
         )
 
-        # For today: filter out slots where start_time < now + 30 minutes
+        # for today, skip slots less than 30min from now
         if target_date == today:
             now_plus_30 = (timezone.localtime() + datetime.timedelta(minutes=30)).time()
             slots = [
@@ -178,13 +152,6 @@ class AvailableSlotsView(APIView):
 
 
 class BookingCreateView(APIView):
-    """
-    POST /api/bookings/
-
-    Creates a new appointment with race-condition-safe slot reservation.
-    Uses transaction.atomic() + select_for_update() to prevent double-booking.
-    """
-
     permission_classes = [IsCustomer]
 
     def post(self, request):
@@ -199,7 +166,6 @@ class BookingCreateView(APIView):
         payment_method = data['payment_method']
         card_number = data.get('card_number', '')
 
-        # Validate barber exists
         try:
             barber = CustomUser.objects.get(pk=barber_id, role=CustomUser.Role.BARBER)
         except CustomUser.DoesNotExist:
@@ -208,7 +174,6 @@ class BookingCreateView(APIView):
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
-        # Fetch services and verify they belong to this barber
         services = list(Service.objects.filter(pk__in=service_ids, barber=barber))
         if len(services) != len(service_ids):
             return Response(
@@ -216,7 +181,6 @@ class BookingCreateView(APIView):
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
-        # Compute totals
         total_duration = sum(s.duration_minutes for s in services)
         total_price = sum(s.price for s in services)
         end_time = (
@@ -224,7 +188,6 @@ class BookingCreateView(APIView):
             + datetime.timedelta(minutes=total_duration)
         ).time()
 
-        # Handle payment
         if payment_method == 'ONLINE' and card_number.endswith('0000'):
             return Response(
                 {'detail': 'Payment declined.'},
@@ -236,9 +199,8 @@ class BookingCreateView(APIView):
         else:
             payment_status = Appointment.PaymentStatus.PENDING
 
-        # Atomic booking with lock
+        # lock rows to prevent double-booking
         with transaction.atomic():
-            # Lock all CONFIRMED appointments for this barber+date
             existing = list(
                 Appointment.objects.select_for_update().filter(
                     barber=barber,
@@ -247,7 +209,6 @@ class BookingCreateView(APIView):
                 )
             )
 
-            # Check for overlaps
             for appt in existing:
                 if _overlaps(start_time, end_time, appt.start_time, appt.end_time):
                     return Response(
@@ -255,7 +216,6 @@ class BookingCreateView(APIView):
                         status=status.HTTP_409_CONFLICT,
                     )
 
-            # Create appointment
             appointment = Appointment.objects.create(
                 customer=request.user,
                 barber=barber,
@@ -269,7 +229,6 @@ class BookingCreateView(APIView):
                 total_duration=total_duration,
             )
 
-            # Create service snapshots
             for svc in services:
                 AppointmentService.objects.create(
                     appointment=appointment,
@@ -286,13 +245,6 @@ class BookingCreateView(APIView):
 
 
 class CustomerAppointmentListView(APIView):
-    """
-    GET /api/bookings/my/upcoming/  — upcoming confirmed appointments
-    GET /api/bookings/my/past/      — past / completed / cancelled appointments
-
-    Separated into two URL paths for clarity.
-    """
-
     permission_classes = [IsCustomer]
 
     def get(self, request, filter_type='upcoming'):
@@ -323,20 +275,13 @@ class CustomerAppointmentListView(APIView):
 
 
 class BarberAppointmentListView(APIView):
-    """
-    GET /api/bookings/barber/day/?date=YYYY-MM-DD
-
-    Returns appointments for the authenticated barber on a given date.
-    Also auto-completes past-due confirmed appointments inline.
-    """
-
     permission_classes = [IsBarber]
 
     def get(self, request):
         now = timezone.localtime()
         today = now.date()
 
-        # Inline auto-complete: mark past confirmed -> completed
+        # auto-complete past appointments
         Appointment.objects.filter(
             barber=request.user,
             status=Appointment.Status.CONFIRMED,
@@ -350,7 +295,6 @@ class BarberAppointmentListView(APIView):
             end_time__lte=now.time(),
         ).update(status=Appointment.Status.COMPLETED)
 
-        # Parse date filter
         date_str = request.query_params.get('date')
         if date_str:
             try:
@@ -372,12 +316,6 @@ class BarberAppointmentListView(APIView):
 
 
 class AppointmentCancelView(APIView):
-    """
-    POST /api/bookings/<pk>/cancel/
-
-    Cancels an appointment. Both customer and barber of the appointment can cancel.
-    """
-
     permission_classes = [IsAuthenticated]
 
     def post(self, request, pk):
@@ -389,7 +327,6 @@ class AppointmentCancelView(APIView):
                 status=status.HTTP_404_NOT_FOUND,
             )
 
-        # Check authorization: only customer or barber of this appointment
         if request.user != appointment.customer and request.user != appointment.barber:
             return Response(
                 {'detail': 'You do not have permission to cancel this appointment.'},
@@ -409,12 +346,6 @@ class AppointmentCancelView(APIView):
 
 
 class AppointmentNoShowView(APIView):
-    """
-    POST /api/bookings/<pk>/no-show/
-
-    Marks an appointment as no-show. Only the barber of the appointment can do this.
-    """
-
     permission_classes = [IsBarber]
 
     def post(self, request, pk):
@@ -445,18 +376,9 @@ class AppointmentNoShowView(APIView):
 
 
 class CreateCheckoutSessionView(APIView):
-    """
-    POST /api/bookings/create-checkout-session/
-
-    Creates a Stripe Checkout Session — redirects user to Stripe's hosted page.
-    Converts UZS to USD cents for Stripe (UZS not supported).
-    Frontend displays UZS; Stripe processes in USD test mode.
-    Returns the checkout session URL for redirect.
-    """
-
     permission_classes = [IsAuthenticated]
 
-    UZS_TO_USD_RATE = 12800  # approximate UZS per USD
+    UZS_TO_USD_RATE = 12800
 
     def post(self, request):
         amount = request.data.get('amount')
@@ -468,7 +390,7 @@ class CreateCheckoutSessionView(APIView):
         if not stripe.api_key:
             return Response({'detail': 'Stripe not configured.'}, status=status.HTTP_503_SERVICE_UNAVAILABLE)
 
-        # Convert UZS to USD cents (minimum 50 cents for Stripe)
+        # UZS not supported by Stripe, convert to USD cents (min 50c)
         amount_usd_cents = max(50, round(amount / self.UZS_TO_USD_RATE * 100))
 
         frontend_url = getattr(django_settings, 'FRONTEND_URL', 'http://localhost:5173')
