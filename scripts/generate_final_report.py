@@ -1211,9 +1211,6 @@ def build_report():
 
     # Student info block
     info_lines = [
-        ("Student:", "Tabassum Allamova"),
-        ("Student ID:", "00012345"),
-        ("Email:", "tallamova2@student.wiut.uz"),
         ("Course:", "BSc (Hons) Business Information Systems"),
         ("Supervisor:", "Said Abduvaliev"),
         ("Date of Submission:", "10th of April, 2026"),

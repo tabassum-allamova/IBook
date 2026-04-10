@@ -128,7 +128,3 @@ python scripts/generate_final_report.py
 ```
 
 This creates `IBook_Final_Report.docx` with all required sections, survey analysis charts, and references.
-
-## Author
-
-Tabassum Allamova - WIUT BIS 2026

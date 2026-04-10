@@ -36,7 +36,7 @@ function update(field: keyof ShopForm, value: string | null) {
         type="text"
         :value="modelValue.name"
         @input="update('name', ($event.target as HTMLInputElement).value)"
-        placeholder="Tabassum Barbershop"
+        placeholder="My Barbershop"
         class="w-full px-3 py-2 border border-ibook-brown-200 rounded-lg bg-white text-ibook-brown-700 placeholder-ibook-brown-400 focus:outline-none focus:ring-2 focus:ring-ibook-gold-500 focus:border-transparent"
       />
     </div>
