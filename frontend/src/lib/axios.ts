@@ -1,5 +1,4 @@
 import axios from 'axios'
-import Cookies from 'js-cookie'
 import type { useAuthStore } from '@/stores/auth'
 
 type AuthStore = ReturnType<typeof useAuthStore>
@@ -32,10 +31,11 @@ async function doRefresh(): Promise<string> {
     .then((res) => {
       const newToken = res.data.access
       if (_store) {
-        // Update token in store directly (triggers the watcher for persistence)
+        // Update token in store directly (triggers the watcher for persistence).
+        // The token is intentionally held in memory + localStorage only.
+        // A non-httpOnly cookie would just be a second XSS-readable copy.
         _store.accessToken = newToken
       }
-      Cookies.set('access_token', newToken, { sameSite: 'strict' })
       return newToken
     })
     .finally(() => {
@@ -74,7 +74,6 @@ api.interceptors.response.use(
         if (_store) {
           _store.clearAuth()
         }
-        Cookies.remove('access_token')
         window.location.href = '/login'
         return Promise.reject(error)
       }

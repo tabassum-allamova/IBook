@@ -7,8 +7,7 @@ const routes: RouteRecordRaw[] = [
   // Public
   {
     path: '/',
-    name: 'landing',
-    component: () => import('@/views/LandingPage.vue'),
+    redirect: '/customer/explore',
   },
   {
     path: '/login',
@@ -33,13 +32,16 @@ const routes: RouteRecordRaw[] = [
   {
     path: '/customer',
     redirect: '/customer/explore',
-    meta: { requiresAuth: true, role: 'CUSTOMER' as UserRole },
   },
   {
     path: '/customer/explore',
     name: 'customer-explore',
     component: () => import('@/views/customer/ExplorePage.vue'),
-    meta: { requiresAuth: true, role: 'CUSTOMER' as UserRole },
+  },
+  {
+    path: '/customer/search',
+    name: 'customer-search',
+    component: () => import('@/views/customer/SearchPage.vue'),
   },
   {
     path: '/customer/book/:barberId',
@@ -64,14 +66,12 @@ const routes: RouteRecordRaw[] = [
     path: '/customer/shop/:shopId',
     name: 'customer-shop-detail',
     component: () => import('@/views/customer/ShopDetailPage.vue'),
-    meta: { requiresAuth: true, role: 'CUSTOMER' as UserRole },
     props: true,
   },
   {
     path: '/customer/barber/:barberId',
     name: 'customer-barber-profile',
     component: () => import('@/views/customer/BarberProfilePage.vue'),
-    meta: { requiresAuth: true, role: 'CUSTOMER' as UserRole },
     props: true,
   },
   {
@@ -98,12 +98,6 @@ const routes: RouteRecordRaw[] = [
     path: '/barber/appointments',
     name: 'barber-appointments',
     component: () => import('@/views/barber/AppointmentsPage.vue'),
-    meta: { requiresAuth: true, role: 'BARBER' as UserRole },
-  },
-  {
-    path: '/barber/profile',
-    name: 'barber-profile',
-    component: () => import('@/views/barber/ProfileSetupPage.vue'),
     meta: { requiresAuth: true, role: 'BARBER' as UserRole },
   },
   {
@@ -157,6 +151,18 @@ const routes: RouteRecordRaw[] = [
     component: () => import('@/views/owner/ShopManagePage.vue'),
     meta: { requiresAuth: true, role: 'SHOP_OWNER' as UserRole },
   },
+  {
+    path: '/owner/barbers',
+    name: 'owner-barbers',
+    component: () => import('@/views/owner/BarbersPage.vue'),
+    meta: { requiresAuth: true, role: 'SHOP_OWNER' as UserRole },
+  },
+  {
+    path: '/owner/analytics',
+    name: 'owner-analytics',
+    component: () => import('@/views/owner/AnalyticsPage.vue'),
+    meta: { requiresAuth: true, role: 'SHOP_OWNER' as UserRole },
+  },
 
   // Catch-all
   {
@@ -173,9 +179,32 @@ const router = createRouter({
 router.beforeEach((to, _from) => {
   const auth = useAuthStore()
 
-  // Landing page: if authenticated, redirect to role dashboard
-  if (to.name === 'landing' && auth.isAuthenticated && auth.user) {
-    return roleDashboard(auth.user.role)
+  // Authenticated non-customers visiting customer-facing discovery pages:
+  // send them to their own dashboard.
+  const customerDiscoveryRoutes = new Set([
+    'customer-explore',
+    'customer-search',
+    'customer-shop-detail',
+    'customer-barber-profile',
+  ])
+  if (
+    auth.isAuthenticated &&
+    auth.user &&
+    auth.user.role !== 'CUSTOMER' &&
+    typeof to.name === 'string' &&
+    customerDiscoveryRoutes.has(to.name)
+  ) {
+    // Exception: a barber previewing their OWN public profile. Settings →
+    // "View public page" hits this path; redirecting would send them to
+    // /barber/dashboard instead of the preview they asked for.
+    const isOwnProfilePreview =
+      to.name === 'customer-barber-profile' &&
+      auth.user.role === 'BARBER' &&
+      to.params.barberId != null &&
+      Number(to.params.barberId) === auth.user.id
+    if (!isOwnProfilePreview) {
+      return roleDashboard(auth.user.role)
+    }
   }
 
   // Guest-only routes: redirect authenticated users to their dashboard

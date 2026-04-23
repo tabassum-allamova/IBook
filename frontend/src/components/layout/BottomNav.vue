@@ -1,6 +1,6 @@
 <template>
   <nav
-    class="fixed bottom-0 left-0 right-0 z-50 bg-white border-t border-ibook-brown-200 md:hidden"
+    class="fixed bottom-0 left-0 right-0 z-50 bg-white border-t border-slate-200 md:hidden"
     style="padding-bottom: env(safe-area-inset-bottom, 0)"
   >
     <div class="flex">
@@ -9,7 +9,7 @@
         :key="item.to"
         :to="item.to"
         class="flex-1 flex flex-col items-center py-2 gap-0.5 transition-colors"
-        :class="isActive(item.to) ? 'text-ibook-brown-800' : 'text-ibook-brown-400'"
+        :class="isActive(item.to) ? 'text-slate-900' : 'text-slate-500'"
       >
         <svg v-if="item.icon === 'explore'" xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke-width="1.8" stroke="currentColor">
           <path stroke-linecap="round" stroke-linejoin="round" d="M15 10.5a3 3 0 11-6 0 3 3 0 016 0z" />
@@ -37,7 +37,7 @@
         <svg v-else xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
           <circle cx="12" cy="12" r="4" />
         </svg>
-        <span class="text-[10px] font-medium leading-none">{{ item.label }}</span>
+        <span class="text-sm font-medium leading-none">{{ item.label }}</span>
       </RouterLink>
     </div>
   </nav>

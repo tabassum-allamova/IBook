@@ -4,67 +4,57 @@ import { RouterLink } from 'vue-router'
 </script>
 
 <template>
-  <div class="min-h-screen bg-ibook-cream flex flex-col">
+  <div class="min-h-screen bg-white flex flex-col">
     <!-- Top bar -->
-    <header class="px-6 py-4 flex justify-end">
-      <RouterLink
-        to="/login"
-        class="text-sm font-medium text-ibook-brown-600 hover:text-ibook-brown-800 transition-colors"
-      >
-        Already have an account? Log in →
-      </RouterLink>
+    <header class="border-b border-slate-200">
+      <div class="max-w-7xl mx-auto flex items-center justify-between px-5 md:px-8 lg:px-12 h-16">
+        <div class="flex items-center gap-2">
+          <span class="inline-flex items-center justify-center h-8 w-8 rounded-md bg-slate-900 text-white text-sm font-bold">i</span>
+          <span class="text-lg font-semibold text-slate-900 tracking-tight">IBook</span>
+        </div>
+        <RouterLink
+          to="/login"
+          class="inline-flex items-center gap-1.5 h-9 px-3.5 rounded-lg border border-slate-200 bg-white text-sm font-medium text-slate-700 hover:text-slate-900 hover:border-slate-400 hover:bg-slate-50 transition-colors"
+        >
+          Log in
+        </RouterLink>
+      </div>
     </header>
 
     <!-- Hero -->
-    <main class="flex-1 flex flex-col items-center justify-center px-6 text-center">
-      <!-- Logo mark -->
-      <div class="mb-8">
-        <div
-          class="inline-flex items-center justify-center w-20 h-20 rounded-2xl bg-ibook-brown-800 shadow-xl mb-5"
-        >
-          <span class="text-3xl font-black text-ibook-gold-400">IB</span>
-        </div>
-        <h1 class="text-5xl sm:text-6xl font-black tracking-tight text-ibook-brown-900">
-          IBook
-        </h1>
-      </div>
-
-      <p class="text-xl sm:text-2xl text-ibook-brown-600 font-medium mb-3 max-w-md leading-snug">
-        Book your perfect cut, anywhere.
-      </p>
-      <p class="text-ibook-brown-400 text-base mb-12 max-w-sm">
-        Connect with top barbers in your area and manage your appointments effortlessly.
+    <main class="flex-1 flex flex-col items-center justify-center px-5 md:px-8 text-center py-16 md:py-24">
+      <h1 class="text-4xl md:text-6xl font-bold text-slate-900 tracking-tight leading-[1.05] max-w-3xl">
+        Book your next haircut in minutes.
+      </h1>
+      <p class="mt-5 text-base md:text-lg text-slate-600 max-w-xl leading-relaxed">
+        Find great barbers near you, see real availability, and reserve a chair online — no calls or waiting.
       </p>
 
-      <!-- CTA buttons -->
-      <div class="flex flex-col sm:flex-row gap-4 w-full max-w-md">
+      <div class="mt-9 flex flex-col sm:flex-row gap-3 w-full max-w-md">
         <RouterLink
           to="/register/customer"
-          class="flex-1 inline-flex items-center justify-center py-4 px-8 bg-ibook-brown-800 hover:bg-ibook-brown-700 text-white font-semibold rounded-xl text-center transition-colors shadow-md"
+          class="flex-1 inline-flex items-center justify-center gap-1.5 h-11 px-5 rounded-lg bg-slate-900 hover:bg-slate-800 text-white text-sm font-semibold transition-colors"
         >
-          I'm a Customer
+          I'm a customer
+          <svg class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7" />
+          </svg>
         </RouterLink>
         <RouterLink
           to="/register/professional"
-          class="flex-1 inline-flex items-center justify-center py-4 px-8 bg-white hover:bg-ibook-brown-50 text-ibook-brown-800 font-semibold rounded-xl text-center transition-colors shadow-md border-2 border-ibook-brown-200 hover:border-ibook-brown-400"
+          class="flex-1 inline-flex items-center justify-center h-11 px-5 rounded-lg border border-slate-200 bg-white text-sm font-semibold text-slate-900 hover:border-slate-400 hover:bg-slate-50 transition-colors"
         >
-          I'm a Barber / Shop Owner
+          I'm a barber or shop owner
         </RouterLink>
-      </div>
-
-      <!-- Decorative dots -->
-      <div class="mt-16 flex gap-2">
-        <div class="w-1.5 h-1.5 rounded-full bg-ibook-brown-300"></div>
-        <div class="w-1.5 h-1.5 rounded-full bg-ibook-gold-400"></div>
-        <div class="w-1.5 h-1.5 rounded-full bg-ibook-brown-300"></div>
       </div>
     </main>
 
     <!-- Footer -->
-    <footer class="px-6 py-4 text-center">
-      <p class="text-xs text-ibook-brown-400">
-        © {{ new Date().getFullYear() }} IBook. All rights reserved.
-      </p>
+    <footer class="border-t border-slate-200">
+      <div class="max-w-7xl mx-auto px-5 md:px-8 lg:px-12 py-6 flex items-center justify-between text-sm text-slate-500">
+        <p>© {{ new Date().getFullYear() }} IBook</p>
+        <p>Made in Tashkent.</p>
+      </div>
     </footer>
   </div>
 </template>

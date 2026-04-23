@@ -43,17 +43,32 @@ export const useAuthStore = defineStore('auth', () => {
     persist()
   }
 
+  // Set by clearAuth so the persistence watcher doesn't write a partial
+  // `{ user: null, accessToken: '<old token>' }` snapshot in the gap
+  // between setting the two refs to null.
+  let isClearing = false
+
   function clearAuth() {
+    isClearing = true
+    // Remove first so a concurrent watcher run or another tab sees the
+    // empty state immediately, before either ref is mutated.
+    localStorage.removeItem(STORAGE_KEY)
     user.value = null
     accessToken.value = null
-    localStorage.removeItem(STORAGE_KEY)
+    isClearing = false
   }
 
   // Keep storage in sync when values change externally (e.g., token refresh)
   watch([user, accessToken], () => {
-    if (user.value || accessToken.value) {
+    if (isClearing) return
+    if (user.value && accessToken.value) {
       persist()
+    } else if (!user.value && !accessToken.value) {
+      // Both nulled out — ensure storage matches.
+      localStorage.removeItem(STORAGE_KEY)
     }
+    // Deliberately no write for the mixed / partial case; treat it as
+    // transient and wait for the next tick to settle.
   })
 
   return {

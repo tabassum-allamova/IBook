@@ -1,62 +1,69 @@
 <script setup lang="ts">
 import { RouterLink } from 'vue-router'
-import AuthLayout from '@/layouts/AuthLayout.vue'
 import LoginForm from '@/components/auth/LoginForm.vue'
 </script>
 
 <template>
-  <AuthLayout>
-    <!-- Back link -->
-    <div class="mb-8">
-      <RouterLink
-        to="/"
-        class="inline-flex items-center gap-2 text-sm text-ibook-brown-500 hover:text-ibook-brown-700 transition-colors"
-      >
-        <svg
-          xmlns="http://www.w3.org/2000/svg"
-          class="h-4 w-4"
-          fill="none"
-          viewBox="0 0 24 24"
-          stroke="currentColor"
-          stroke-width="2"
+  <div class="min-h-screen bg-white flex flex-col">
+    <!-- Minimal top bar -->
+    <header class="border-b border-slate-200">
+      <div class="max-w-7xl mx-auto flex items-center justify-between px-5 md:px-8 lg:px-12 h-16">
+        <RouterLink
+          to="/customer/explore"
+          class="text-lg font-bold text-slate-900 tracking-tight"
         >
-          <path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7" />
-        </svg>
-        Back to home
-      </RouterLink>
-    </div>
-
-    <!-- Heading -->
-    <div class="mb-8">
-      <div class="flex items-center gap-3 mb-4">
-        <span class="text-2xl font-black text-ibook-brown-800">IBook</span>
+          IBook
+        </RouterLink>
+        <RouterLink
+          to="/customer/explore"
+          class="inline-flex items-center gap-1.5 h-9 px-3.5 rounded-lg border border-slate-200 bg-white text-sm font-medium text-slate-700 hover:text-slate-900 hover:border-slate-400 hover:bg-slate-50 transition-colors focus:outline-none focus:ring-2 focus:ring-slate-900 focus:ring-offset-2"
+        >
+          <svg class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7" />
+          </svg>
+          All barbershops
+        </RouterLink>
       </div>
-      <h1 class="text-3xl font-bold text-ibook-brown-900">Welcome back</h1>
-      <p class="mt-1 text-ibook-brown-500">Sign in to your account to continue.</p>
-    </div>
+    </header>
 
-    <LoginForm />
+    <!-- Content -->
+    <main class="flex-1 flex items-start justify-center px-5 md:px-8 pt-10 md:pt-16 pb-16">
+      <div class="w-full max-w-md">
+        <!-- Heading -->
+        <div class="mb-8">
+          <h1 class="text-2xl md:text-3xl font-bold text-slate-900 tracking-tight leading-tight">
+            Welcome back
+          </h1>
+          <p class="mt-2 text-[15px] text-slate-600 leading-relaxed">
+            Sign in to continue booking your next appointment.
+          </p>
+        </div>
 
-    <!-- Register links -->
-    <div class="mt-6 text-center space-y-2">
-      <p class="text-sm text-ibook-brown-500">
-        New customer?
-        <RouterLink
-          to="/register/customer"
-          class="font-semibold text-ibook-brown-700 hover:text-ibook-brown-900 transition-colors"
-        >
-          Create an account
-        </RouterLink>
-      </p>
-      <p class="text-sm text-ibook-brown-500">
-        Barber or shop owner?
-        <RouterLink
-          to="/register/professional"
-          class="font-semibold text-ibook-brown-700 hover:text-ibook-brown-900 transition-colors"
-        >
-          Join as a professional
-        </RouterLink>
-      </p>
-    </div>
-  </AuthLayout>
+        <!-- Form -->
+        <LoginForm />
+
+        <!-- Register links -->
+        <div class="mt-8 pt-6 border-t border-slate-200 text-sm text-slate-600 space-y-2">
+          <p>
+            New to IBook?
+            <RouterLink
+              to="/register/customer"
+              class="ml-1 font-semibold text-slate-900 hover:underline underline-offset-4 decoration-2"
+            >
+              Create a customer account
+            </RouterLink>
+          </p>
+          <p>
+            Barber or shop owner?
+            <RouterLink
+              to="/register/professional"
+              class="ml-1 font-semibold text-slate-900 hover:underline underline-offset-4 decoration-2"
+            >
+              Join as a professional
+            </RouterLink>
+          </p>
+        </div>
+      </div>
+    </main>
+  </div>
 </template>
