@@ -13,6 +13,7 @@ class ReviewCreateSerializer(serializers.Serializer):
 
 
 class ReviewListItemSerializer(serializers.Serializer):
+    id = serializers.IntegerField()
     reviewer = serializers.SerializerMethodField()
     rating = serializers.IntegerField()
     text = serializers.CharField()
