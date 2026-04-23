@@ -158,9 +158,9 @@ def test_barber_profile_services_ordered(auth_client, customer_user, barber_full
 
 @pytest.mark.django_db
 def test_barber_profile_unauthenticated(api_client, barber_user):
-    """GET /api/barbers/<id>/ without auth returns 401."""
+    """GET /api/barbers/<id>/ is public — anonymous users can browse."""
     response = api_client.get(f"/api/barbers/{barber_user.pk}/")
-    assert response.status_code == 401
+    assert response.status_code == 200
 
 
 @pytest.mark.django_db

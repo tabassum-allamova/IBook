@@ -1,5 +1,4 @@
-from datetime import datetime
-
+from django.utils import timezone
 from rest_framework import serializers
 
 from apps.services.models import Service
@@ -28,12 +27,11 @@ class BarberServiceSummarySerializer(serializers.ModelSerializer):
 class BarberSummarySerializer(serializers.Serializer):
     id = serializers.IntegerField()
     full_name = serializers.SerializerMethodField()
-    email = serializers.EmailField()
     avatar = serializers.ImageField()
     top_services = serializers.SerializerMethodField()
 
     def get_full_name(self, obj) -> str:
-        return obj.get_full_name() or obj.email
+        return obj.get_full_name() or 'Barber'
 
     def get_top_services(self, obj) -> list:
         services = obj.services.order_by('sort_order')[:3]
@@ -94,13 +92,22 @@ class ShopListSerializer(serializers.ModelSerializer):
         return round(float(dist), 1)
 
     def get_is_open_now(self, obj) -> bool:
-        now = datetime.now()
+        now = timezone.localtime()
         day = now.weekday()  # Monday=0 matches ShopHours DAYS
         try:
             hours = obj.hours.get(day_of_week=day, is_open=True)
-            return hours.opens_at <= now.time() <= hours.closes_at
-        except Exception:
+        except ShopHours.DoesNotExist:
             return False
+        if not hours.opens_at or not hours.closes_at:
+            return False
+        current = now.time()
+        if not (hours.opens_at <= current <= hours.closes_at):
+            return False
+        # Respect mid-day breaks.
+        if hours.break_start and hours.break_end:
+            if hours.break_start <= current < hours.break_end:
+                return False
+        return True
 
     def get_min_price(self, obj) -> int | None:
         result = (

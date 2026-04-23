@@ -219,6 +219,6 @@ def test_shop_list_card_fields(auth_client, customer_user, shop_fixture):
 
 @pytest.mark.django_db
 def test_shop_list_unauthenticated(api_client, shop_fixture):
-    """GET /api/shops/ without auth should return 401."""
+    """GET /api/shops/ without auth is public — anonymous users can browse."""
     response = api_client.get("/api/shops/")
-    assert response.status_code == 401
+    assert response.status_code == 200

@@ -29,6 +29,9 @@ class CustomUser(AbstractUser):
     avatar = models.ImageField(upload_to='users/avatars/', blank=True)
     bio = models.TextField(blank=True)
     years_of_experience = models.PositiveSmallIntegerField(null=True, blank=True)
+    # Only meaningful for solo barbers who want to appear on the map.
+    lat = models.DecimalField(max_digits=9, decimal_places=6, null=True, blank=True)
+    lng = models.DecimalField(max_digits=9, decimal_places=6, null=True, blank=True)
 
     # Use email as the login identifier
     USERNAME_FIELD = "email"

@@ -1,10 +1,15 @@
 import random
+import time as time_module
+import urllib.request
+import urllib.error
 from datetime import date, time, timedelta
 
+from django.core.files.base import ContentFile
 from django.core.management.base import BaseCommand
+from django.utils.text import slugify
 
 from apps.users.models import CustomUser
-from apps.shops.models import Shop, ShopHours, BarberShopMembership
+from apps.shops.models import Shop, ShopHours, ShopPhoto, BarberShopMembership
 from apps.services.models import Service, WeeklySchedule
 from apps.bookings.models import Appointment, AppointmentService
 from apps.reviews.models import Review
@@ -283,6 +288,9 @@ class Command(BaseCommand):
         owners = self._seed_owners()
         shops = self._seed_shops(owners)
         self._seed_shop_hours(shops)
+        # Cover any shop in the DB, not only the demo ones — some may have been
+        # created manually via admin or the app UI.
+        self._seed_shop_photos(list(Shop.objects.all()))
         barbers = self._seed_barbers(shops)
         barber_services = self._seed_services(barbers)
         self._seed_weekly_schedules(barbers)
@@ -355,6 +363,65 @@ class Command(BaseCommand):
                 count += 1
 
         self.stdout.write(f"  ShopHours: {count} rows ready")
+
+    def _seed_shop_photos(self, shops):
+        """
+        Download barbershop photos from LoremFlickr (Flickr-sourced,
+        keyword-tagged) and save them as ShopPhoto rows.
+
+        Idempotent: shops that already have any photo are skipped.
+        """
+        photos_per_shop = 3
+        keywords = "barbershop,haircut,salon"
+        width, height = 1200, 900
+        total_created = 0
+        total_failed = 0
+
+        for shop in shops:
+            if shop.photos.exists():
+                continue
+
+            for n in range(1, photos_per_shop + 1):
+                # Stable, per-shop-per-index seed → same image each re-run
+                lock = shop.id * 10 + n
+                url = (
+                    f"https://loremflickr.com/{width}/{height}/"
+                    f"{keywords}?lock={lock}"
+                )
+                data = self._download_image(url)
+                if data is None:
+                    total_failed += 1
+                    continue
+
+                filename = f"{slugify(shop.name)}-{n}.jpg"
+                photo = ShopPhoto(shop=shop)
+                photo.image.save(filename, ContentFile(data), save=True)
+                total_created += 1
+
+                # Be polite to the free service
+                time_module.sleep(0.3)
+
+        if total_failed:
+            self.stdout.write(
+                f"  Photos:    {total_created} downloaded ({total_failed} failed)"
+            )
+        else:
+            self.stdout.write(f"  Photos:    {total_created} downloaded")
+
+    def _download_image(self, url):
+        """Return image bytes, or None on failure."""
+        try:
+            req = urllib.request.Request(
+                url,
+                headers={"User-Agent": "IBook-seed/1.0"},
+            )
+            with urllib.request.urlopen(req, timeout=20) as resp:
+                return resp.read()
+        except (urllib.error.URLError, TimeoutError, OSError) as e:
+            self.stdout.write(
+                self.style.WARNING(f"  [warn] image fetch failed: {url} — {e}")
+            )
+            return None
 
     def _seed_barbers(self, shops):
         barbers = []

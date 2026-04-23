@@ -1,6 +1,7 @@
+from django.db import transaction
 from django.shortcuts import get_object_or_404
 from rest_framework.parsers import FormParser, MultiPartParser
-from rest_framework.permissions import IsAuthenticated
+from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
@@ -13,7 +14,10 @@ from .utils import annotate_distance
 
 
 class ShopListView(APIView):
-    permission_classes = [IsAuthenticated]
+    def get_permissions(self):
+        if self.request.method == 'GET':
+            return [AllowAny()]
+        return [IsAuthenticated()]
 
     def get(self, request):
         queryset = Shop.objects.all()
@@ -66,7 +70,7 @@ class ShopMeView(APIView):
             shop = request.user.shop  # OneToOneField reverse accessor
         except Shop.DoesNotExist:
             return Response({'detail': 'No shop found.'}, status=404)
-        serializer = ShopSerializer(shop)
+        serializer = ShopSerializer(shop, context={'request': request})
         return Response(serializer.data)
 
 
@@ -74,11 +78,11 @@ class ShopDetailView(APIView):
     def get_permissions(self):
         if self.request.method == 'PATCH':
             return [IsShopOwner()]
-        return [IsAuthenticated()]
+        return [AllowAny()]
 
     def get(self, request, shop_id):
         shop = get_object_or_404(Shop, pk=shop_id)
-        serializer = ShopSerializer(shop)
+        serializer = ShopSerializer(shop, context={'request': request})
         return Response(serializer.data)
 
     def patch(self, request, shop_id):
@@ -118,19 +122,26 @@ class ShopPhotoView(APIView):
     parser_classes = [MultiPartParser, FormParser]
 
     def post(self, request, shop_id):
-        shop = get_object_or_404(Shop, pk=shop_id)
-        if shop.owner != request.user:
-            return Response({'detail': 'You do not own this shop.'}, status=403)
         files = request.FILES.getlist('image')
         if not files:
             return Response({'error': 'No image files provided.'}, status=400)
-        current_count = shop.photos.count()
-        if current_count + len(files) > 5:
-            return Response({'error': f'Max 5 photos. You have {current_count}, trying to add {len(files)}.'}, status=400)
-        created = []
-        for f in files:
-            photo = ShopPhoto.objects.create(shop=shop, image=f)
-            created.append(photo)
+
+        # Lock the shop row so two concurrent uploads can't both pass the
+        # 5-photo cap. Count + create happen inside the same transaction.
+        with transaction.atomic():
+            shop = Shop.objects.select_for_update().filter(pk=shop_id).first()
+            if shop is None:
+                return Response({'detail': 'Shop not found.'}, status=404)
+            if shop.owner_id != request.user.id:
+                return Response({'detail': 'You do not own this shop.'}, status=403)
+            current_count = shop.photos.count()
+            if current_count + len(files) > 5:
+                return Response(
+                    {'error': f'Max 5 photos. You have {current_count}, trying to add {len(files)}.'},
+                    status=400,
+                )
+            created = [ShopPhoto.objects.create(shop=shop, image=f) for f in files]
+
         serializer = ShopPhotoSerializer(created, many=True, context={'request': request})
         return Response(serializer.data, status=201)
 
