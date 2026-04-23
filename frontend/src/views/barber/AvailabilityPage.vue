@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { ref, watch } from 'vue'
+import { useI18n } from 'vue-i18n'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/vue-query'
 import { useToast } from 'vue-toastification'
 import BarberLayout from '@/layouts/BarberLayout.vue'
@@ -10,10 +11,9 @@ import type { ScheduleDay } from '@/components/availability/WeeklyScheduleEditor
 import api from '@/lib/axios'
 
 const toast = useToast()
-
 const queryClient = useQueryClient()
+const { t } = useI18n()
 
-// Default 7-day schedule (all closed)
 function defaultSchedule(): ScheduleDay[] {
   return Array.from({ length: 7 }, (_, i) => ({
     day_of_week: i,
@@ -26,8 +26,7 @@ function defaultSchedule(): ScheduleDay[] {
 }
 
 const scheduleData = ref<ScheduleDay[]>(defaultSchedule())
-const saveSuccess = ref(false)
-const saveError = ref('')
+const scheduleError = ref('')
 
 const { data: remoteSchedule, isLoading } = useQuery<ScheduleDay[]>({
   queryKey: ['availability-schedule'],
@@ -37,7 +36,6 @@ const { data: remoteSchedule, isLoading } = useQuery<ScheduleDay[]>({
   },
 })
 
-// Sync loaded schedule into local state
 watch(
   remoteSchedule,
   (data) => {
@@ -48,81 +46,131 @@ watch(
   { immediate: true },
 )
 
+const DAY_NAMES = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday']
+
+function validateSchedule(): boolean {
+  scheduleError.value = ''
+  for (const d of scheduleData.value) {
+    if (!d.is_working) continue
+    if (!d.start_time || !d.end_time) {
+      scheduleError.value = `${DAY_NAMES[d.day_of_week]}: set both start and end times.`
+      return false
+    }
+    if (d.start_time >= d.end_time) {
+      scheduleError.value = `${DAY_NAMES[d.day_of_week]}: end time must be after start time.`
+      return false
+    }
+    if (d.break_start || d.break_end) {
+      if (!(d.break_start && d.break_end)) {
+        scheduleError.value = `${DAY_NAMES[d.day_of_week]}: set both break start and end (or clear both).`
+        return false
+      }
+      if (d.break_start >= d.break_end) {
+        scheduleError.value = `${DAY_NAMES[d.day_of_week]}: break end must be after break start.`
+        return false
+      }
+      if (d.break_start < d.start_time || d.break_end > d.end_time) {
+        scheduleError.value = `${DAY_NAMES[d.day_of_week]}: break must fall inside working hours.`
+        return false
+      }
+    }
+  }
+  return true
+}
+
 const saveMutation = useMutation({
   mutationFn: async (schedule: ScheduleDay[]) => {
     await api.put('/api/availability/schedule/', schedule)
   },
   onSuccess: () => {
     queryClient.invalidateQueries({ queryKey: ['availability-schedule'] })
-    saveSuccess.value = true
-    saveError.value = ''
-    toast.success('Schedule saved')
-    setTimeout(() => {
-      saveSuccess.value = false
-    }, 3000)
+    toast.success(t('availability.saved'))
   },
   onError: () => {
-    saveError.value = 'Failed to save schedule. Please try again.'
-    saveSuccess.value = false
-    toast.error('Failed to save schedule. Please try again.')
+    scheduleError.value = t('toasts.genericError')
+    toast.error(t('toasts.genericError'))
   },
 })
 
 async function onSaveSchedule() {
+  if (!validateSchedule()) return
   await saveMutation.mutateAsync(scheduleData.value)
 }
 </script>
 
 <template>
   <BarberLayout>
-    <div class="p-4 md:p-8 space-y-6">
-      <!-- Page header -->
-      <div>
-        <h1 class="text-xl md:text-3xl font-bold text-ibook-brown-900">Availability</h1>
-        <p class="mt-1 text-ibook-brown-500">Set your working hours and block off unavailable dates.</p>
+    <section class="max-w-6xl mx-auto">
+      <!-- Header -->
+      <div class="mb-6 md:mb-8">
+        <h1 class="text-2xl md:text-3xl font-bold text-slate-900 tracking-tight leading-tight">
+          {{ t('availability.title') }}
+        </h1>
+        <p class="mt-1 text-sm text-slate-600">
+          {{ t('availability.subtitle') }}
+        </p>
       </div>
 
-      <!-- Section 1: Working Hours -->
-      <div class="bg-ibook-brown-50 rounded-2xl shadow-sm p-6">
-        <div class="flex items-start justify-between mb-6">
-          <div>
-            <h2 class="text-xl font-semibold text-ibook-brown-700">Working Hours</h2>
-            <p class="text-sm text-ibook-brown-500 mt-0.5">Toggle each day and set your working times.</p>
+      <div class="space-y-5 md:space-y-6">
+        <!-- Working hours card -->
+        <div class="bg-white rounded-xl border border-slate-200 p-6 md:p-8">
+          <div class="mb-5">
+            <h2 class="text-base font-semibold text-slate-900 tracking-tight">
+              {{ t('availability.weeklySchedule') }}
+            </h2>
+            <p class="mt-0.5 text-sm text-slate-500">
+              {{ t('availability.weeklyHint') }}
+            </p>
           </div>
-        </div>
 
-        <div v-if="isLoading" class="space-y-3">
-          <SkeletonBlock height="3rem" />
-          <SkeletonBlock height="3rem" />
-          <SkeletonBlock height="3rem" />
-          <SkeletonBlock height="3rem" />
-        </div>
-        <div v-else class="space-y-4">
-          <WeeklyScheduleEditor v-model="scheduleData" />
+          <div v-if="isLoading" class="space-y-3">
+            <SkeletonBlock v-for="n in 7" :key="n" height="3rem" />
+          </div>
+          <template v-else>
+            <WeeklyScheduleEditor v-model="scheduleData" />
 
-          <div class="flex items-center gap-4 pt-2">
-            <button
-              type="button"
-              :disabled="saveMutation.isPending.value"
-              class="px-6 py-2.5 rounded-xl bg-ibook-gold-500 text-white text-sm font-semibold hover:bg-ibook-gold-600 transition-colors disabled:opacity-60 shadow-sm cursor-pointer"
-              @click="onSaveSchedule"
+            <div
+              v-if="scheduleError"
+              class="mt-4 px-4 py-3 bg-red-50 border border-red-200 rounded-lg text-sm text-red-700"
             >
-              {{ saveMutation.isPending.value ? 'Saving...' : 'Save Schedule' }}
-            </button>
-            <span v-if="saveSuccess" class="text-sm text-green-600 font-medium">Schedule saved</span>
-            <span v-if="saveError" class="text-sm text-red-600">{{ saveError }}</span>
-          </div>
-        </div>
-      </div>
+              {{ scheduleError }}
+            </div>
 
-      <!-- Section 2: Blocked Dates -->
-      <div class="bg-ibook-brown-50 rounded-2xl shadow-sm p-6">
-        <div class="mb-6">
-          <h2 class="text-xl font-semibold text-ibook-brown-700">Blocked Dates</h2>
-          <p class="text-sm text-ibook-brown-500 mt-0.5">Click a date to mark it as unavailable.</p>
+            <div class="pt-5">
+              <button
+                type="button"
+                class="inline-flex items-center justify-center gap-2 h-10 px-5 rounded-lg bg-slate-900 hover:bg-slate-800 text-white text-sm font-semibold transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
+                :disabled="saveMutation.isPending.value"
+                @click="onSaveSchedule"
+              >
+                <svg
+                  v-if="saveMutation.isPending.value"
+                  class="h-4 w-4 animate-spin"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                >
+                  <circle class="opacity-30" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="3" />
+                  <path class="opacity-90" fill="currentColor" d="M4 12a8 8 0 018-8v3a5 5 0 00-5 5H4z" />
+                </svg>
+                {{ saveMutation.isPending.value ? t('settings.saving') : t('availability.save') }}
+              </button>
+            </div>
+          </template>
         </div>
-        <DateBlockCalendar />
+
+        <!-- Blocked dates card -->
+        <div class="bg-white rounded-xl border border-slate-200 p-6 md:p-8">
+          <div class="mb-5">
+            <h2 class="text-base font-semibold text-slate-900 tracking-tight">
+              {{ t('availability.dateBlocks') }}
+            </h2>
+            <p class="mt-0.5 text-sm text-slate-500">
+              {{ t('availability.dateBlocksHint') }}
+            </p>
+          </div>
+          <DateBlockCalendar />
+        </div>
       </div>
-    </div>
+    </section>
   </BarberLayout>
 </template>

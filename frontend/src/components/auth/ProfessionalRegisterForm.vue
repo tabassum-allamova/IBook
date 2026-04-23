@@ -1,6 +1,9 @@
 <script setup lang="ts">
 import { ref, reactive } from 'vue'
+import { useI18n } from 'vue-i18n'
 import api from '@/lib/axios'
+
+const { t } = useI18n()
 
 const emit = defineEmits<{
   (e: 'success'): void
@@ -43,28 +46,28 @@ function validate() {
   let valid = true
 
   if (!form.fullName.trim()) {
-    errors.fullName = 'Full name is required.'
+    errors.fullName = t('auth.register.errors.fullNameRequired')
     valid = false
   }
 
   if (!form.email) {
-    errors.email = 'Email is required.'
+    errors.email = t('auth.register.errors.emailRequired')
     valid = false
   } else if (!validateEmail(form.email)) {
-    errors.email = 'Please enter a valid email address.'
+    errors.email = t('auth.register.errors.emailInvalid')
     valid = false
   }
 
   if (!form.password) {
-    errors.password = 'Password is required.'
+    errors.password = t('auth.register.errors.passwordRequired')
     valid = false
   } else if (!validatePassword(form.password)) {
-    errors.password = 'Password must be at least 8 characters and include a letter and a number.'
+    errors.password = t('auth.register.errors.passwordStrength')
     valid = false
   }
 
   if (!form.role) {
-    errors.role = 'Please select a role.'
+    errors.role = t('auth.register.errors.roleRequired')
     valid = false
   }
 
@@ -85,29 +88,19 @@ async function submit() {
     })
     emit('success')
   } catch (err: unknown) {
-    const axiosErr = err as {
-      response?: {
-        data?: Record<string, string | string[]>
-      }
-    }
+    const axiosErr = err as { response?: { data?: Record<string, string | string[]> } }
     const data = axiosErr.response?.data
+    const first = (v: unknown) =>
+      typeof v === 'string' ? v : Array.isArray(v) && typeof v[0] === 'string' ? v[0] : ''
     if (data) {
-      if (data.email) errors.email = Array.isArray(data.email) ? data.email[0] : data.email
-      if (data.password)
-        errors.password = Array.isArray(data.password) ? data.password[0] : data.password
-      if (data.full_name)
-        errors.fullName = Array.isArray(data.full_name) ? data.full_name[0] : data.full_name
-      if (data.phone_number)
-        errors.phone = Array.isArray(data.phone_number) ? data.phone_number[0] : data.phone_number
-      if (data.role) errors.role = Array.isArray(data.role) ? data.role[0] : data.role
-      if (data.non_field_errors)
-        errors.general = Array.isArray(data.non_field_errors)
-          ? data.non_field_errors[0]
-          : data.non_field_errors
-      if (data.detail)
-        errors.general = typeof data.detail === 'string' ? data.detail : (data.detail as string[])[0]
+      errors.email = first(data.email) || ''
+      errors.password = first(data.password) || ''
+      errors.fullName = first(data.full_name) || ''
+      errors.phone = first(data.phone_number) || ''
+      errors.role = first(data.role) || ''
+      errors.general = first(data.non_field_errors) || first(data.detail) || ''
     } else {
-      errors.general = 'Something went wrong. Please try again.'
+      errors.general = t('auth.register.errors.generic')
     }
   } finally {
     loading.value = false
@@ -116,118 +109,123 @@ async function submit() {
 </script>
 
 <template>
-  <form @submit.prevent="submit" novalidate>
-    <!-- Full Name -->
-    <div class="mb-5">
-      <label for="fullName" class="block text-sm font-semibold text-ibook-brown-700 mb-1.5">
-        Full Name
+  <form @submit.prevent="submit" novalidate class="space-y-5">
+    <!-- Full name -->
+    <div>
+      <label for="pro-fullName" class="block text-sm font-medium text-slate-700 mb-1.5">
+        {{ t('auth.register.fullName') }}
       </label>
       <input
-        id="fullName"
+        id="pro-fullName"
         v-model="form.fullName"
         type="text"
         autocomplete="name"
-        placeholder="John Smith"
-        class="w-full px-4 py-3 rounded-lg border text-ibook-brown-900 placeholder-ibook-brown-300 bg-white focus:outline-none focus:ring-2 transition-colors"
+        :placeholder="t('auth.register.fullNamePlaceholder')"
+        class="w-full px-3.5 py-2.5 rounded-lg border text-[15px] text-slate-900 placeholder:text-slate-400 bg-white focus:outline-none focus:ring-2 transition-colors"
         :class="
           errors.fullName
-            ? 'border-red-400 focus:ring-red-300'
-            : 'border-ibook-brown-200 focus:ring-ibook-brown-400 focus:border-ibook-brown-400'
+            ? 'border-red-400 focus:ring-red-200'
+            : 'border-slate-200 focus:ring-slate-900/20 focus:border-slate-900'
         "
       />
       <p v-if="errors.fullName" class="mt-1.5 text-sm text-red-600">{{ errors.fullName }}</p>
     </div>
 
     <!-- Email -->
-    <div class="mb-5">
-      <label for="email" class="block text-sm font-semibold text-ibook-brown-700 mb-1.5">
-        Email
+    <div>
+      <label for="pro-email" class="block text-sm font-medium text-slate-700 mb-1.5">
+        {{ t('auth.register.email') }}
       </label>
       <input
-        id="email"
+        id="pro-email"
         v-model="form.email"
         type="email"
         autocomplete="email"
-        placeholder="you@example.com"
-        class="w-full px-4 py-3 rounded-lg border text-ibook-brown-900 placeholder-ibook-brown-300 bg-white focus:outline-none focus:ring-2 transition-colors"
+        :placeholder="t('auth.register.emailPlaceholder')"
+        class="w-full px-3.5 py-2.5 rounded-lg border text-[15px] text-slate-900 placeholder:text-slate-400 bg-white focus:outline-none focus:ring-2 transition-colors"
         :class="
           errors.email
-            ? 'border-red-400 focus:ring-red-300'
-            : 'border-ibook-brown-200 focus:ring-ibook-brown-400 focus:border-ibook-brown-400'
+            ? 'border-red-400 focus:ring-red-200'
+            : 'border-slate-200 focus:ring-slate-900/20 focus:border-slate-900'
         "
       />
       <p v-if="errors.email" class="mt-1.5 text-sm text-red-600">{{ errors.email }}</p>
     </div>
 
     <!-- Password -->
-    <div class="mb-5">
-      <label for="password" class="block text-sm font-semibold text-ibook-brown-700 mb-1.5">
-        Password
+    <div>
+      <label for="pro-password" class="block text-sm font-medium text-slate-700 mb-1.5">
+        {{ t('auth.register.password') }}
       </label>
       <input
-        id="password"
+        id="pro-password"
         v-model="form.password"
         type="password"
         autocomplete="new-password"
         placeholder="••••••••"
-        class="w-full px-4 py-3 rounded-lg border text-ibook-brown-900 placeholder-ibook-brown-300 bg-white focus:outline-none focus:ring-2 transition-colors"
+        class="w-full px-3.5 py-2.5 rounded-lg border text-[15px] text-slate-900 placeholder:text-slate-400 bg-white focus:outline-none focus:ring-2 transition-colors"
         :class="
           errors.password
-            ? 'border-red-400 focus:ring-red-300'
-            : 'border-ibook-brown-200 focus:ring-ibook-brown-400 focus:border-ibook-brown-400'
+            ? 'border-red-400 focus:ring-red-200'
+            : 'border-slate-200 focus:ring-slate-900/20 focus:border-slate-900'
         "
       />
       <p v-if="errors.password" class="mt-1.5 text-sm text-red-600">{{ errors.password }}</p>
-      <p v-else class="mt-1 text-xs text-ibook-brown-400">
-        Must be 8+ characters with at least one letter and one number.
+      <p v-else class="mt-1.5 text-sm text-slate-500">
+        {{ t('auth.register.passwordHint') }}
       </p>
     </div>
 
-    <!-- Role selector -->
-    <div class="mb-5">
-      <label class="block text-sm font-semibold text-ibook-brown-700 mb-2">
-        I am a…
+    <!-- Role -->
+    <div>
+      <label class="block text-sm font-medium text-slate-700 mb-2">
+        {{ t('auth.register.iAmA') }}
       </label>
       <div class="grid grid-cols-2 gap-3">
         <label
-          class="flex items-center justify-center gap-2 px-4 py-3 rounded-lg border-2 cursor-pointer transition-colors"
+          class="flex items-center justify-center gap-2 h-11 px-3 rounded-lg border cursor-pointer transition-colors bg-white"
           :class="
             form.role === 'BARBER'
-              ? 'border-ibook-brown-600 bg-ibook-brown-50 text-ibook-brown-800'
-              : 'border-ibook-brown-200 text-ibook-brown-500 hover:border-ibook-brown-400'
+              ? 'border-slate-900 ring-2 ring-slate-900/10 text-slate-900'
+              : 'border-slate-200 text-slate-600 hover:border-slate-400'
           "
         >
           <input type="radio" v-model="form.role" value="BARBER" class="sr-only" />
-          <span class="font-medium text-sm">Barber</span>
+          <span class="text-sm font-medium">{{ t('auth.register.barber') }}</span>
         </label>
         <label
-          class="flex items-center justify-center gap-2 px-4 py-3 rounded-lg border-2 cursor-pointer transition-colors"
+          class="flex items-center justify-center gap-2 h-11 px-3 rounded-lg border cursor-pointer transition-colors bg-white"
           :class="
             form.role === 'SHOP_OWNER'
-              ? 'border-ibook-brown-600 bg-ibook-brown-50 text-ibook-brown-800'
-              : 'border-ibook-brown-200 text-ibook-brown-500 hover:border-ibook-brown-400'
+              ? 'border-slate-900 ring-2 ring-slate-900/10 text-slate-900'
+              : 'border-slate-200 text-slate-600 hover:border-slate-400'
           "
         >
           <input type="radio" v-model="form.role" value="SHOP_OWNER" class="sr-only" />
-          <span class="font-medium text-sm">Shop Owner</span>
+          <span class="text-sm font-medium">{{ t('auth.register.shopOwner') }}</span>
         </label>
       </div>
       <p v-if="errors.role" class="mt-1.5 text-sm text-red-600">{{ errors.role }}</p>
     </div>
 
-    <!-- Phone (optional) -->
-    <div class="mb-6">
-      <label for="phone" class="block text-sm font-semibold text-ibook-brown-700 mb-1.5">
-        Phone
-        <span class="font-normal text-ibook-brown-400">(optional)</span>
+    <!-- Phone -->
+    <div>
+      <label for="pro-phone" class="block text-sm font-medium text-slate-700 mb-1.5">
+        {{ t('auth.register.phone') }}
+        <span class="font-normal text-slate-400">{{ t('auth.register.phoneOptional') }}</span>
       </label>
       <input
-        id="phone"
+        id="pro-phone"
         v-model="form.phone"
         type="tel"
         autocomplete="tel"
-        placeholder="+1 555 000 0000"
-        class="w-full px-4 py-3 rounded-lg border border-ibook-brown-200 text-ibook-brown-900 placeholder-ibook-brown-300 bg-white focus:outline-none focus:ring-2 focus:ring-ibook-brown-400 focus:border-ibook-brown-400 transition-colors"
+        :placeholder="t('auth.register.phonePlaceholder')"
+        class="w-full px-3.5 py-2.5 rounded-lg border text-[15px] text-slate-900 placeholder:text-slate-400 bg-white focus:outline-none focus:ring-2 transition-colors"
+        :class="
+          errors.phone
+            ? 'border-red-400 focus:ring-red-200'
+            : 'border-slate-200 focus:ring-slate-900/20 focus:border-slate-900'
+        "
       />
       <p v-if="errors.phone" class="mt-1.5 text-sm text-red-600">{{ errors.phone }}</p>
     </div>
@@ -235,7 +233,7 @@ async function submit() {
     <!-- General error -->
     <div
       v-if="errors.general"
-      class="mb-5 px-4 py-3 bg-red-50 border border-red-200 rounded-lg text-sm text-red-700"
+      class="px-4 py-3 bg-red-50 border border-red-200 rounded-lg text-sm text-red-700"
     >
       {{ errors.general }}
     </div>
@@ -244,10 +242,21 @@ async function submit() {
     <button
       type="submit"
       :disabled="loading"
-      class="w-full py-3 px-6 bg-ibook-brown-700 hover:bg-ibook-brown-600 text-white font-semibold rounded-lg transition-colors focus:outline-none focus:ring-2 focus:ring-ibook-brown-400 focus:ring-offset-2 disabled:opacity-60 disabled:cursor-not-allowed cursor-pointer"
+      class="w-full inline-flex items-center justify-center gap-2 h-11 px-5 rounded-lg bg-slate-900 hover:bg-slate-800 text-white text-sm font-semibold transition-colors focus:outline-none focus:ring-2 focus:ring-slate-900 focus:ring-offset-2 disabled:opacity-60 disabled:cursor-not-allowed cursor-pointer"
     >
-      <span v-if="loading">Creating account…</span>
-      <span v-else>Create Account</span>
+      <template v-if="loading">
+        <svg class="h-4 w-4 animate-spin" fill="none" viewBox="0 0 24 24">
+          <circle class="opacity-30" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="3" />
+          <path class="opacity-90" fill="currentColor" d="M4 12a8 8 0 018-8v3a5 5 0 00-5 5H4z" />
+        </svg>
+        {{ t('auth.register.submitting') }}
+      </template>
+      <template v-else>
+        {{ t('auth.register.submit') }}
+        <svg class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7" />
+        </svg>
+      </template>
     </button>
   </form>
 </template>

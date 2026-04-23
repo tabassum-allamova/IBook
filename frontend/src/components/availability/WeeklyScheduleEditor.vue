@@ -1,4 +1,9 @@
 <script setup lang="ts">
+import { computed } from 'vue'
+import { useI18n } from 'vue-i18n'
+
+const { t } = useI18n()
+
 export interface ScheduleDay {
   day_of_week: number // 0=Mon, 6=Sun
   is_working: boolean
@@ -16,13 +21,20 @@ const emit = defineEmits<{
   'update:modelValue': [value: ScheduleDay[]]
 }>()
 
-const dayLabels = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday']
+const dayLabels = computed(() => [
+  t('availability.days.mon'),
+  t('availability.days.tue'),
+  t('availability.days.wed'),
+  t('availability.days.thu'),
+  t('availability.days.fri'),
+  t('availability.days.sat'),
+  t('availability.days.sun'),
+])
 
 function updateDay(index: number, changes: Partial<ScheduleDay>) {
   const updated = props.modelValue.map((day, i) => {
     if (i !== index) return day
     const merged = { ...day, ...changes }
-    // Clear time fields when toggled off
     if ('is_working' in changes && !changes.is_working) {
       merged.start_time = null
       merged.end_time = null
@@ -46,75 +58,84 @@ function getDay(index: number): ScheduleDay {
     }
   )
 }
+
+function hasBreak(d: ScheduleDay) {
+  return Boolean(d.break_start && d.break_end)
+}
+
+function toggleBreak(index: number, enabled: boolean) {
+  if (enabled) {
+    updateDay(index, { break_start: '13:00', break_end: '14:00' })
+  } else {
+    updateDay(index, { break_start: null, break_end: null })
+  }
+}
 </script>
 
 <template>
-  <div class="space-y-2">
-    <div
+  <ul class="divide-y divide-slate-100">
+    <li
       v-for="(label, index) in dayLabels"
       :key="index"
-      class="flex flex-wrap items-center gap-x-4 gap-y-2 rounded-xl px-4 py-3 transition-colors"
-      :class="getDay(index).is_working ? 'bg-white border border-ibook-brown-100' : 'bg-ibook-cream border border-ibook-brown-100'"
+      class="py-4 flex flex-col sm:flex-row sm:items-start gap-3"
     >
-      <!-- Toggle + Day label -->
-      <div class="flex items-center gap-3 w-36 flex-shrink-0">
+      <!-- Toggle + day label -->
+      <label class="w-32 flex items-center gap-3 cursor-pointer select-none">
         <input
-          :id="`day-toggle-${index}`"
           type="checkbox"
           :checked="getDay(index).is_working"
-          class="w-4 h-4 accent-ibook-gold-500 cursor-pointer"
+          class="h-4 w-4 accent-slate-900"
           @change="updateDay(index, { is_working: ($event.target as HTMLInputElement).checked })"
         />
-        <label
-          :for="`day-toggle-${index}`"
-          class="text-sm font-medium cursor-pointer"
-          :class="getDay(index).is_working ? 'text-ibook-brown-900' : 'text-ibook-brown-500'"
-        >
-          {{ label }}
-        </label>
-      </div>
+        <span class="text-sm font-medium text-slate-900">{{ label }}</span>
+      </label>
 
-      <!-- Closed indicator -->
-      <span v-if="!getDay(index).is_working" class="text-sm text-ibook-brown-400 italic">
-        Closed
-      </span>
-
-      <!-- Working hours -->
-      <template v-if="getDay(index).is_working">
-        <div class="flex items-center gap-2">
+      <div class="flex-1 space-y-2">
+        <!-- Working hours -->
+        <div v-if="getDay(index).is_working" class="flex flex-wrap items-center gap-2 text-sm text-slate-700">
           <input
             type="time"
             :value="getDay(index).start_time ?? ''"
-            class="rounded-lg border border-ibook-brown-200 px-2 py-1.5 text-sm text-ibook-brown-900 focus:outline-none focus:ring-2 focus:ring-ibook-gold-400"
+            class="h-9 px-3 rounded-lg border border-slate-200 text-sm text-slate-900 bg-white focus:outline-none focus:ring-2 focus:ring-slate-900/20 focus:border-slate-900 tabular-nums"
             @change="updateDay(index, { start_time: ($event.target as HTMLInputElement).value || null })"
           />
-          <span class="text-ibook-brown-400 font-medium">–</span>
+          <span class="text-slate-400">–</span>
           <input
             type="time"
             :value="getDay(index).end_time ?? ''"
-            class="rounded-lg border border-ibook-brown-200 px-2 py-1.5 text-sm text-ibook-brown-900 focus:outline-none focus:ring-2 focus:ring-ibook-gold-400"
+            class="h-9 px-3 rounded-lg border border-slate-200 text-sm text-slate-900 bg-white focus:outline-none focus:ring-2 focus:ring-slate-900/20 focus:border-slate-900 tabular-nums"
             @change="updateDay(index, { end_time: ($event.target as HTMLInputElement).value || null })"
           />
+
+          <label class="inline-flex items-center gap-2 ml-3 text-sm text-slate-700 cursor-pointer select-none">
+            <input
+              type="checkbox"
+              :checked="hasBreak(getDay(index))"
+              class="h-4 w-4 accent-slate-900"
+              @change="toggleBreak(index, ($event.target as HTMLInputElement).checked)"
+            />
+            {{ t('availability.break') }}
+          </label>
+
+          <template v-if="hasBreak(getDay(index))">
+            <input
+              type="time"
+              :value="getDay(index).break_start ?? ''"
+              class="h-9 px-3 rounded-lg border border-slate-200 text-sm text-slate-900 bg-white focus:outline-none focus:ring-2 focus:ring-slate-900/20 focus:border-slate-900 tabular-nums"
+              @change="updateDay(index, { break_start: ($event.target as HTMLInputElement).value || null })"
+            />
+            <span class="text-slate-400">–</span>
+            <input
+              type="time"
+              :value="getDay(index).break_end ?? ''"
+              class="h-9 px-3 rounded-lg border border-slate-200 text-sm text-slate-900 bg-white focus:outline-none focus:ring-2 focus:ring-slate-900/20 focus:border-slate-900 tabular-nums"
+              @change="updateDay(index, { break_end: ($event.target as HTMLInputElement).value || null })"
+            />
+          </template>
         </div>
 
-        <!-- Break times -->
-        <div class="flex items-center gap-2 text-sm text-ibook-brown-500">
-          <span class="flex-shrink-0">Break:</span>
-          <input
-            type="time"
-            :value="getDay(index).break_start ?? ''"
-            class="rounded-lg border border-ibook-brown-200 px-2 py-1.5 text-sm text-ibook-brown-900 focus:outline-none focus:ring-2 focus:ring-ibook-gold-400"
-            @change="updateDay(index, { break_start: ($event.target as HTMLInputElement).value || null })"
-          />
-          <span class="text-ibook-brown-400 font-medium">–</span>
-          <input
-            type="time"
-            :value="getDay(index).break_end ?? ''"
-            class="rounded-lg border border-ibook-brown-200 px-2 py-1.5 text-sm text-ibook-brown-900 focus:outline-none focus:ring-2 focus:ring-ibook-gold-400"
-            @change="updateDay(index, { break_end: ($event.target as HTMLInputElement).value || null })"
-          />
-        </div>
-      </template>
-    </div>
-  </div>
+        <p v-else class="text-sm text-slate-400">{{ t('availability.dayOff') }}</p>
+      </div>
+    </li>
+  </ul>
 </template>
