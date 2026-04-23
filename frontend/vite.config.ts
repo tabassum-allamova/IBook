@@ -15,9 +15,13 @@ export default defineConfig({
     },
   },
   server: {
+    host: '0.0.0.0',
     proxy: {
       '/api': {
-        target: 'http://localhost:8001',
+        // Backend URL resolves in this order:
+        //   1. VITE_BACKEND_URL env (Docker sets this to http://backend:8000)
+        //   2. local dev fallback
+        target: process.env.VITE_BACKEND_URL || 'http://localhost:8001',
         changeOrigin: true,
       },
     },

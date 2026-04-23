@@ -29,13 +29,31 @@ Customers can find nearby barbershops, browse barber profiles, book appointments
 
 ## Setup
 
-### Prerequisites
+### Quick start with Docker (recommended)
+
+```bash
+docker compose up --build
+```
+
+This spins up Postgres, the Django backend (with migrations and demo data seeded
+automatically on first run), and the Vite frontend. Once the logs settle:
+
+- Frontend: http://localhost:5173
+- Backend:  http://localhost:8001
+- Postgres: localhost:5433 (user/db/password = `ibook`)
+
+Stop with `Ctrl+C`, or clear everything with `docker compose down -v` (the `-v`
+also wipes the database volume so the next run re-seeds).
+
+### Manual setup
+
+#### Prerequisites
 
 - Python 3.11+
 - Node.js 18+
 - npm
 
-### Backend
+#### Backend
 
 ```bash
 cd backend
@@ -50,7 +68,7 @@ python manage.py runserver
 
 Backend runs at http://localhost:8000
 
-### Frontend
+#### Frontend
 
 ```bash
 cd frontend
@@ -60,7 +78,7 @@ npm run dev
 
 Frontend runs at http://localhost:5173
 
-### Environment Variables
+#### Environment Variables
 
 Create `backend/.env`:
 ```
@@ -79,7 +97,7 @@ VITE_STRIPE_PUBLISHABLE_KEY=pk_test_...  # optional
 
 Stripe keys are optional - the app works without them (just use "Pay at Shop" option).
 
-### Demo Accounts
+#### Demo Accounts
 
 After running `seed_demo`:
 
@@ -100,7 +118,7 @@ backend/
     bookings/    # appointments, slots, analytics
     reviews/     # ratings and reviews
   config/        # Django settings, urls
-  tests/         # pytest test suite (99 tests)
+  tests/         # pytest test suite
 
 frontend/
   src/
@@ -116,15 +134,5 @@ frontend/
 
 ```bash
 cd backend
-python -m pytest -x -q    # run all 99 tests
+python -m pytest -x -q
 ```
-
-## Academic Report
-
-To generate the BISP report:
-```bash
-pip install python-docx matplotlib
-python scripts/generate_final_report.py
-```
-
-This creates `IBook_Final_Report.docx` with all required sections, survey analysis charts, and references.
