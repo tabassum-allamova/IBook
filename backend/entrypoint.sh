@@ -39,12 +39,21 @@ python manage.py migrate --noinput
 # the external photo downloads inside seed_demo.
 # -----------------------------------------------------------------------------
 if [ "${SKIP_SEED:-0}" != "1" ]; then
-  HAS_USERS=$(python manage.py shell -c "from django.contrib.auth import get_user_model; import sys; sys.stdout.write('1' if get_user_model().objects.exists() else '0')" 2>/dev/null || echo "0")
-  if [ "$HAS_USERS" = "0" ]; then
+  # Exit code 0 = already has users, 1 = empty. Running Python directly
+  # (not `manage.py shell`) to avoid Django's auto-import banner polluting
+  # stdout and to keep the check reliable.
+  if python -c "
+import django, os
+os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'config.settings')
+django.setup()
+from django.contrib.auth import get_user_model
+import sys
+sys.exit(0 if get_user_model().objects.exists() else 1)
+" 2>/dev/null; then
+    echo "[entrypoint] Database already seeded — skipping."
+  else
     echo "[entrypoint] Empty database — seeding demo data..."
     python manage.py seed_demo || echo "[entrypoint] Seed failed (continuing); run 'python manage.py seed_demo' manually to retry."
-  else
-    echo "[entrypoint] Database already seeded — skipping."
   fi
 fi
 
