@@ -1,10 +1,11 @@
 from django.conf import settings
 from django.core.mail import send_mail
 from django.core.signing import BadSignature, SignatureExpired, TimestampSigner
+from django.db import models
 from django.shortcuts import get_object_or_404
 from rest_framework import status
 from rest_framework.generics import RetrieveUpdateAPIView
-from rest_framework.parsers import FormParser, MultiPartParser
+from rest_framework.parsers import FormParser, JSONParser, MultiPartParser
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.request import Request
 from rest_framework.response import Response
@@ -14,6 +15,7 @@ from rest_framework_simplejwt.tokens import RefreshToken
 
 from apps.users.models import CustomUser
 from apps.users.serializers import (
+    BarberListItemSerializer,
     BarberProfileSerializer,
     CustomerRegisterSerializer,
     CustomTokenObtainPairSerializer,
@@ -30,7 +32,8 @@ def _send_verification_email(user: CustomUser) -> None:
     import threading
 
     token = _signer.sign(user.pk)
-    verify_url = f"http://localhost:8000/api/auth/verify-email/?token={token}"
+    base_url = getattr(settings, 'BACKEND_URL', None) or 'http://localhost:8000'
+    verify_url = f"{base_url.rstrip('/')}/api/auth/verify-email/?token={token}"
 
     def _send():
         send_mail(
@@ -45,12 +48,14 @@ def _send_verification_email(user: CustomUser) -> None:
 
 
 def _set_refresh_cookie(response: Response, refresh_token: str) -> None:
+    # Only send the refresh cookie over HTTPS in non-DEBUG (production).
+    # DEBUG keeps it flexible so developers hitting http://localhost still work.
     response.set_cookie(
         key=_REFRESH_COOKIE,
         value=refresh_token,
         max_age=_REFRESH_MAX_AGE,
         httponly=True,
-        secure=False,  # Set to True in production (HTTPS)
+        secure=not settings.DEBUG,
         samesite="Lax",
     )
 
@@ -120,7 +125,14 @@ class VerifyEmailView(APIView):
 
 
 class LoginView(APIView):
+    from rest_framework.throttling import AnonRateThrottle
+
+    class _LoginRateThrottle(AnonRateThrottle):
+        scope = 'login'
+        rate = '10/min'
+
     permission_classes = [AllowAny]
+    throttle_classes = [_LoginRateThrottle]
 
     def post(self, request: Request) -> Response:
         serializer = CustomTokenObtainPairSerializer(
@@ -168,7 +180,16 @@ class LogoutView(APIView):
 
 
 class CookieTokenRefreshView(APIView):
+    from rest_framework.throttling import AnonRateThrottle
+
+    class _RefreshRateThrottle(AnonRateThrottle):
+        # Token-refresh requests from the same IP are capped to prevent
+        # brute-forcing expired refresh tokens or abusing the cookie endpoint.
+        scope = 'token_refresh'
+        rate = '20/min'
+
     permission_classes = [AllowAny]
+    throttle_classes = [_RefreshRateThrottle]
 
     def post(self, request: Request, *args, **kwargs) -> Response:
         from rest_framework_simplejwt.exceptions import InvalidToken, TokenError
@@ -218,7 +239,7 @@ class ShopOwnerDashboardStubView(APIView):
 
 class ProfileView(RetrieveUpdateAPIView):
     permission_classes = [IsAuthenticated]
-    parser_classes = [MultiPartParser, FormParser]
+    parser_classes = [JSONParser, MultiPartParser, FormParser]
     serializer_class = UserProfileSerializer
 
     def get_object(self) -> CustomUser:
@@ -230,9 +251,103 @@ class ProfileView(RetrieveUpdateAPIView):
 
 
 class BarberProfileView(APIView):
-    permission_classes = [IsAuthenticated]
+    permission_classes = [AllowAny]
 
     def get(self, request: Request, pk: int) -> Response:
-        barber = get_object_or_404(CustomUser, pk=pk, role=CustomUser.Role.BARBER)
+        # Prefetch everything BarberProfileSerializer touches in its method
+        # fields (services, weekly schedule, shop membership, reviews) so the
+        # endpoint runs in a constant number of queries instead of 4–5 per
+        # call. Serializer methods will pick up the prefetched relations
+        # transparently via Django's default relation cache.
+        barber = get_object_or_404(
+            CustomUser.objects.prefetch_related(
+                'services',
+                'weekly_schedule',
+                'shop_memberships__shop',
+                'reviews_received',
+            ),
+            pk=pk,
+            role=CustomUser.Role.BARBER,
+        )
         serializer = BarberProfileSerializer(barber, context={'request': request})
+        return Response(serializer.data)
+
+
+class BarberListView(APIView):
+    """
+    Public directory of barbers.
+
+    Query params:
+      - solo=true           → only barbers with no shop membership
+      - name=...            → case-insensitive substring match on first/last name
+      - email=...           → substring match on email (authenticated shop
+                              owners only — used by the add-barber flow)
+      - exclude_shop=<id>   → hide barbers already in this shop
+    """
+
+    permission_classes = [AllowAny]
+
+    def get(self, request: Request) -> Response:
+        from django.db.models import Avg, Min, Prefetch
+        from apps.reviews.models import Review
+        from apps.services.models import Service
+
+        qs = (
+            CustomUser.objects.filter(
+                role=CustomUser.Role.BARBER,
+                is_active=True,
+                is_email_verified=True,
+            )
+            .annotate(
+                _min_price=Min('services__price'),
+                _avg_rating=Avg('reviews_received__rating'),
+            )
+            .prefetch_related(
+                'shop_memberships__shop',
+                Prefetch(
+                    'services',
+                    queryset=Service.objects.order_by('sort_order', 'price'),
+                ),
+            )
+        )
+
+        if request.query_params.get('solo') in ('1', 'true', 'True'):
+            qs = qs.filter(shop_memberships__isnull=True)
+
+        name = request.query_params.get('name')
+        if name:
+            # Split on whitespace so "Aziz Karimov" matches first_name="Aziz",
+            # last_name="Karimov". Each token must hit either first or last name.
+            name_q = models.Q()
+            for token in name.split():
+                name_q &= models.Q(first_name__icontains=token) | models.Q(last_name__icontains=token)
+            qs = qs.filter(name_q)
+
+        # Email lookup is scoped to authenticated shop owners — used by the
+        # "Add barber" modal. Never exposed to anonymous callers to avoid
+        # being used as an account-enumeration oracle.
+        is_shop_owner = (
+            request.user.is_authenticated
+            and getattr(request.user, 'role', None) == CustomUser.Role.SHOP_OWNER
+        )
+        email = request.query_params.get('email')
+        if email and is_shop_owner:
+            qs = qs.filter(email__icontains=email)
+
+        exclude_shop = request.query_params.get('exclude_shop')
+        if exclude_shop:
+            try:
+                qs = qs.exclude(shop_memberships__shop_id=int(exclude_shop))
+            except (ValueError, TypeError):
+                pass
+
+        qs = qs.order_by('first_name', 'last_name', 'id').distinct()
+        serializer = BarberListItemSerializer(
+            qs,
+            many=True,
+            context={
+                'request': request,
+                'include_email': is_shop_owner,
+            },
+        )
         return Response(serializer.data)

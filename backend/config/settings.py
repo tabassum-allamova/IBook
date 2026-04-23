@@ -1,13 +1,23 @@
 from datetime import timedelta
 from pathlib import Path
 
+from django.core.exceptions import ImproperlyConfigured
 from decouple import Csv, config
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 
-SECRET_KEY = config("SECRET_KEY", default="django-insecure-change-me-in-production-asap")
-
 DEBUG = config("DEBUG", default=True, cast=bool)
+
+# Keep a weak default ONLY in DEBUG so a fresh clone runs out-of-the-box.
+# Production must set SECRET_KEY explicitly; running with the default key
+# would silently re-use a well-known value, breaking CSRF and session
+# signing guarantees.
+_DEFAULT_DEV_SECRET = "django-insecure-dev-only-never-use-in-production"
+SECRET_KEY = config("SECRET_KEY", default=_DEFAULT_DEV_SECRET if DEBUG else "")
+if not SECRET_KEY or (not DEBUG and SECRET_KEY == _DEFAULT_DEV_SECRET):
+    raise ImproperlyConfigured(
+        "SECRET_KEY must be set to a strong random value when DEBUG is False."
+    )
 
 ALLOWED_HOSTS = config("ALLOWED_HOSTS", default="localhost,127.0.0.1", cast=Csv())
 
@@ -112,6 +122,11 @@ REST_FRAMEWORK = {
     "DEFAULT_PERMISSION_CLASSES": (
         "rest_framework.permissions.IsAuthenticated",
     ),
+    "DEFAULT_THROTTLE_RATES": {
+        # Scoped throttles used on sensitive auth endpoints.
+        "token_refresh": "20/min",
+        "login": "10/min",
+    },
 }
 
 SIMPLE_JWT = {
@@ -136,6 +151,8 @@ if not EMAIL_HOST_USER or not EMAIL_HOST_PASSWORD:
     EMAIL_BACKEND = "django.core.mail.backends.console.EmailBackend"
 
 FRONTEND_URL = config("FRONTEND_URL", default="http://localhost:5173")
+BACKEND_URL = config("BACKEND_URL", default="http://localhost:8000")
 
 STRIPE_SECRET_KEY = config('STRIPE_SECRET_KEY', default='')
 STRIPE_PUBLISHABLE_KEY = config('STRIPE_PUBLISHABLE_KEY', default='')
+STRIPE_WEBHOOK_SECRET = config('STRIPE_WEBHOOK_SECRET', default='')

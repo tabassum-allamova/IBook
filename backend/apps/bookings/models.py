@@ -66,6 +66,16 @@ class Appointment(models.Model):
             models.Index(fields=['barber', 'date', 'status']),
             models.Index(fields=['customer', 'status']),
         ]
+        constraints = [
+            # No two CONFIRMED appointments can share the same (barber, date,
+            # start_time). `select_for_update` is a no-op on SQLite so this
+            # is the real defence against double-booking under concurrency.
+            models.UniqueConstraint(
+                fields=['barber', 'date', 'start_time'],
+                condition=models.Q(status='CONFIRMED'),
+                name='unique_confirmed_slot_per_barber',
+            ),
+        ]
 
     def __str__(self):
         return f'{self.customer} -> {self.barber} on {self.date} {self.start_time}'

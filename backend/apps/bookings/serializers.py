@@ -1,6 +1,7 @@
 from rest_framework import serializers
 
 from apps.bookings.models import Appointment, AppointmentService
+from apps.bookings.risk import CustomerStats, compute_risk
 
 
 class BookingCreateSerializer(serializers.Serializer):
@@ -11,7 +12,12 @@ class BookingCreateSerializer(serializers.Serializer):
     payment_method = serializers.ChoiceField(
         choices=Appointment.PaymentMethod.choices,
     )
-    card_number = serializers.CharField(required=False, allow_blank=True, default='')
+
+
+class RescheduleSerializer(serializers.Serializer):
+    date = serializers.DateField()
+    start_time = serializers.TimeField(format='%H:%M', input_formats=['%H:%M', '%H:%M:%S'])
+    service_ids = serializers.ListField(child=serializers.IntegerField(), min_length=1)
 
 
 class AppointmentServiceSerializer(serializers.ModelSerializer):
@@ -45,6 +51,7 @@ class AppointmentListSerializer(serializers.ModelSerializer):
     customer_name = serializers.SerializerMethodField()
     barber_name = serializers.SerializerMethodField()
     has_review = serializers.SerializerMethodField()
+    risk = serializers.SerializerMethodField()
 
     class Meta:
         model = Appointment
@@ -53,12 +60,17 @@ class AppointmentListSerializer(serializers.ModelSerializer):
             'date', 'start_time', 'end_time',
             'status', 'payment_method', 'payment_status',
             'total_price', 'total_duration', 'created_at', 'services',
-            'shop_name', 'shop_address', 'has_review',
+            'shop_name', 'shop_address', 'has_review', 'risk',
         ]
 
     def _get_shop(self, obj):
-        membership = obj.barber.shop_memberships.select_related('shop').first()
-        return membership.shop if membership else None
+        # Caches once per row so `get_shop_name` + `get_shop_address` don't
+        # each fire their own query. The view is expected to prefetch
+        # `barber__shop_memberships__shop` so reading `.all()` is a no-op.
+        if not hasattr(obj, '_cached_shop'):
+            memberships = list(obj.barber.shop_memberships.all())
+            obj._cached_shop = memberships[0].shop if memberships else None
+        return obj._cached_shop
 
     def get_shop_name(self, obj):
         shop = self._get_shop(obj)
@@ -76,3 +88,20 @@ class AppointmentListSerializer(serializers.ModelSerializer):
 
     def get_has_review(self, obj) -> bool:
         return getattr(obj, 'has_review', False)
+
+    def get_risk(self, obj):
+        # Only computed when the view explicitly opts in (barber day view).
+        # Customer-facing lists never expose it. Past / non-CONFIRMED rows
+        # return null — their outcome is already known.
+        if not self.context.get('include_risk'):
+            return None
+        if obj.status != Appointment.Status.CONFIRMED:
+            return None
+        stats_map: dict[int, CustomerStats] = self.context.get('customer_stats_map', {})
+        stats = stats_map.get(obj.customer_id, CustomerStats())
+        return compute_risk(
+            stats=stats,
+            appointment_date=obj.date,
+            appointment_time=obj.start_time,
+            created_at=obj.created_at,
+        )

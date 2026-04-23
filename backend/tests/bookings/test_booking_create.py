@@ -66,6 +66,10 @@ class TestCreateBooking:
     def test_create_booking_online_payment(
         self, auth_client, customer_user, barber_with_schedule, service_fixture,
     ):
+        """ONLINE bookings start PENDING; they only flip to PAID once Stripe
+        confirms the charge (via webhook or the finalize endpoint). The
+        earlier behavior of marking them PAID up-front let customers hold a
+        slot without paying."""
         client = auth_client(customer_user)
         response = client.post(
             BOOKINGS_URL,
@@ -75,12 +79,11 @@ class TestCreateBooking:
                 'start_time': '09:00',
                 'service_ids': [service_fixture.pk],
                 'payment_method': 'ONLINE',
-                'card_number': '4111111111111111',
             },
             format='json',
         )
         assert response.status_code == 201
-        assert response.data['payment_status'] == 'PAID'
+        assert response.data['payment_status'] == 'PENDING'
 
     def test_create_booking_pay_at_shop(
         self, auth_client, customer_user, barber_with_schedule, service_fixture,
@@ -99,27 +102,6 @@ class TestCreateBooking:
         )
         assert response.status_code == 201
         assert response.data['payment_status'] == 'PENDING'
-
-    def test_create_booking_declined_card(
-        self, auth_client, customer_user, barber_with_schedule, service_fixture,
-    ):
-        client = auth_client(customer_user)
-        response = client.post(
-            BOOKINGS_URL,
-            {
-                'barber_id': barber_with_schedule.pk,
-                'date': self._next_monday().isoformat(),
-                'start_time': '09:00',
-                'service_ids': [service_fixture.pk],
-                'payment_method': 'ONLINE',
-                'card_number': '4111111111110000',  # Ends in 0000 -> declined
-            },
-            format='json',
-        )
-        assert response.status_code == 400
-        assert Appointment.objects.filter(
-            payment_status='DECLINED',
-        ).count() == 0  # Should not persist a declined appointment
 
     def test_create_booking_multi_service(
         self, auth_client, customer_user, barber_with_schedule, service_fixture,
