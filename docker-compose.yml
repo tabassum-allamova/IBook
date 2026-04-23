@@ -8,9 +8,9 @@ services:
       POSTGRES_PASSWORD: ibook
     volumes:
       - pgdata:/var/lib/postgresql/data
-    # Exposed on 5433 so it doesn't clash with a local Postgres on 5432.
+    # Exposed on 5434 so it doesn't clash with a local Postgres on 5432/5433.
     ports:
-      - "5433:5432"
+      - "5434:5432"
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U ibook -d ibook"]
       interval: 3s

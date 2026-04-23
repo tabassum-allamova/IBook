@@ -40,7 +40,7 @@ automatically on first run), and the Vite frontend. Once the logs settle:
 
 - Frontend: http://localhost:5173
 - Backend:  http://localhost:8001
-- Postgres: localhost:5433 (user/db/password = `ibook`)
+- Postgres: localhost:5434 (user/db/password = `ibook`)
 
 Stop with `Ctrl+C`, or clear everything with `docker compose down -v` (the `-v`
 also wipes the database volume so the next run re-seeds).
