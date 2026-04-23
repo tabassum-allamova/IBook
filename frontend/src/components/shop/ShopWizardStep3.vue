@@ -41,8 +41,8 @@ function previewUrl(file: File): string {
 <template>
   <div class="space-y-6">
     <div>
-      <h2 class="text-xl font-semibold text-ibook-brown-700 mb-1">Shop Photos</h2>
-      <p class="text-sm text-ibook-brown-400">Upload up to {{ MAX_PHOTOS }} photos of your shop</p>
+      <h2 class="text-xl font-semibold text-slate-700 mb-1">Shop Photos</h2>
+      <p class="text-sm text-slate-400">Upload up to {{ MAX_PHOTOS }} photos of your shop</p>
     </div>
 
     <!-- Hidden file input -->
@@ -64,16 +64,16 @@ function previewUrl(file: File): string {
         class="px-4 py-2 rounded-lg text-sm font-medium transition-colors"
         :class="
           modelValue.length >= MAX_PHOTOS
-            ? 'bg-ibook-brown-100 text-ibook-brown-400 cursor-not-allowed'
-            : 'bg-ibook-gold-500 hover:bg-ibook-gold-600 text-white cursor-pointer'
+            ? 'bg-slate-100 text-slate-400 cursor-not-allowed'
+            : 'bg-slate-900 hover:bg-slate-800 text-white cursor-pointer'
         "
       >
         Add Photos
       </button>
-      <span v-if="modelValue.length >= MAX_PHOTOS" class="text-sm text-ibook-brown-400">
+      <span v-if="modelValue.length >= MAX_PHOTOS" class="text-sm text-slate-400">
         {{ MAX_PHOTOS }}/{{ MAX_PHOTOS }} maximum
       </span>
-      <span v-else class="text-sm text-ibook-brown-400">
+      <span v-else class="text-sm text-slate-400">
         {{ modelValue.length }}/{{ MAX_PHOTOS }} selected
       </span>
     </div>
@@ -88,7 +88,7 @@ function previewUrl(file: File): string {
         <img
           :src="previewUrl(file)"
           :alt="`Photo ${index + 1}`"
-          class="w-20 h-20 object-cover rounded-lg border border-ibook-brown-200"
+          class="w-20 h-20 object-cover rounded-lg border border-slate-200"
         />
         <button
           type="button"
@@ -104,7 +104,7 @@ function previewUrl(file: File): string {
     <!-- Empty state -->
     <div
       v-else
-      class="flex flex-col items-center justify-center py-10 border-2 border-dashed border-ibook-brown-200 rounded-lg text-ibook-brown-400"
+      class="flex flex-col items-center justify-center py-10 border-2 border-dashed border-slate-200 rounded-lg text-slate-400"
     >
       <p class="text-sm">No photos selected yet</p>
       <p class="text-xs mt-1">Photos help customers find and recognize your shop</p>

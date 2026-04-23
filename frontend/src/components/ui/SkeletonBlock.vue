@@ -1,6 +1,6 @@
 <template>
   <div
-    class="animate-pulse rounded-lg bg-ibook-brown-100"
+    class="animate-pulse rounded-lg bg-slate-100"
     :class="className"
     :style="{ height, width }"
   />

@@ -3,6 +3,7 @@ import { ref, reactive } from 'vue'
 import { useRouter } from 'vue-router'
 import { useMutation } from '@tanstack/vue-query'
 import { useToast } from 'vue-toastification'
+import OwnerLayout from '@/layouts/OwnerLayout.vue'
 import api from '@/lib/axios'
 import ShopWizardStep1 from '@/components/shop/ShopWizardStep1.vue'
 import ShopWizardStep2 from '@/components/shop/ShopWizardStep2.vue'
@@ -158,19 +159,21 @@ async function handleSubmit() {
 </script>
 
 <template>
-  <div class="min-h-screen bg-ibook-cream flex items-center justify-center p-4">
-    <div class="w-full max-w-2xl">
+  <OwnerLayout>
+    <section class="max-w-3xl mx-auto">
       <!-- Header -->
-      <div class="mb-8 text-center">
-        <h1 class="text-3xl font-bold text-ibook-brown-700">Create Your Shop</h1>
-        <p class="text-ibook-brown-400 mt-2">Step {{ currentStep }} of {{ totalSteps }}</p>
+      <div class="mb-8">
+        <h1 class="text-2xl md:text-3xl font-bold text-slate-900 tracking-tight leading-tight">
+          Create your shop
+        </h1>
+        <p class="mt-1 text-sm text-slate-600">Step {{ currentStep }} of {{ totalSteps }}</p>
       </div>
 
       <!-- Progress bar -->
       <div class="mb-8">
-        <div class="h-2 bg-ibook-brown-100 rounded-full overflow-hidden">
+        <div class="h-1.5 bg-slate-100 rounded-full overflow-hidden">
           <div
-            class="h-full bg-ibook-gold-500 rounded-full transition-all duration-300"
+            class="h-full bg-slate-900 rounded-full transition-all duration-300"
             :style="{ width: `${((currentStep - 1) / (totalSteps - 1)) * 100}%` }"
           />
         </div>
@@ -178,8 +181,8 @@ async function handleSubmit() {
           <span
             v-for="step in totalSteps"
             :key="step"
-            class="text-xs font-medium"
-            :class="step <= currentStep ? 'text-ibook-gold-600' : 'text-ibook-brown-400'"
+            class="text-sm font-medium"
+            :class="step <= currentStep ? 'text-slate-900' : 'text-slate-400'"
           >
             Step {{ step }}
           </span>
@@ -187,7 +190,7 @@ async function handleSubmit() {
       </div>
 
       <!-- Step Content Card -->
-      <div class="bg-white rounded-2xl shadow-sm border border-ibook-brown-100 p-8">
+      <div class="bg-white rounded-xl border border-slate-200 p-6 md:p-8">
         <!-- Step 1 -->
         <ShopWizardStep1
           v-if="currentStep === 1"
@@ -222,9 +225,12 @@ async function handleSubmit() {
           <button
             v-if="currentStep > 1"
             type="button"
+            class="inline-flex items-center justify-center gap-1.5 h-10 px-4 rounded-lg border border-slate-200 bg-white text-sm font-medium text-slate-700 hover:text-slate-900 hover:border-slate-400 transition-colors"
             @click="prevStep"
-            class="px-5 py-2 rounded-lg border border-ibook-brown-200 text-ibook-brown-700 hover:bg-ibook-brown-50 font-medium transition-colors"
           >
+            <svg class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7" />
+            </svg>
             Back
           </button>
           <div v-else />
@@ -232,23 +238,30 @@ async function handleSubmit() {
           <button
             v-if="currentStep < totalSteps"
             type="button"
+            class="inline-flex items-center justify-center gap-1.5 h-10 px-5 rounded-lg bg-slate-900 hover:bg-slate-800 text-white text-sm font-semibold transition-colors"
             @click="nextStep"
-            class="px-5 py-2 rounded-lg bg-ibook-gold-500 hover:bg-ibook-gold-600 text-white font-medium transition-colors"
           >
             Next
+            <svg class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7" />
+            </svg>
           </button>
 
           <button
             v-else
             type="button"
-            @click="handleSubmit"
+            class="inline-flex items-center justify-center gap-2 h-10 px-5 rounded-lg bg-slate-900 hover:bg-slate-800 text-white text-sm font-semibold transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
             :disabled="isSubmitting"
-            class="px-5 py-2 rounded-lg bg-ibook-gold-500 hover:bg-ibook-gold-600 text-white font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            @click="handleSubmit"
           >
-            {{ isSubmitting ? 'Creating...' : 'Create Shop' }}
+            <svg v-if="isSubmitting" class="h-4 w-4 animate-spin" fill="none" viewBox="0 0 24 24">
+              <circle class="opacity-30" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="3" />
+              <path class="opacity-90" fill="currentColor" d="M4 12a8 8 0 018-8v3a5 5 0 00-5 5H4z" />
+            </svg>
+            {{ isSubmitting ? 'Creating…' : 'Create shop' }}
           </button>
         </div>
       </div>
-    </div>
-  </div>
+    </section>
+  </OwnerLayout>
 </template>
