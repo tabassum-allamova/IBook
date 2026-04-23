@@ -1,22 +1,7 @@
 @import "tailwindcss";
 
 @theme {
-  /* IBook warm palette */
-  --color-ibook-cream: #fdf6ec;
-
-  --color-ibook-brown-50: #faf5ee;
-  --color-ibook-brown-100: #f2e6d0;
-  --color-ibook-brown-200: #e4cba0;
-  --color-ibook-brown-300: #d4a96a;
-  --color-ibook-brown-400: #c28b42;
-  --color-ibook-brown-500: #a87030;
-  --color-ibook-brown-600: #8a5722;
-  --color-ibook-brown-700: #6e4019;
-  --color-ibook-brown-800: #542f12;
-  --color-ibook-brown-900: #3d200c;
-
-  --color-ibook-gold-400: #d4a017;
-  --color-ibook-gold-500: #b8860b;
+  --font-sans: 'Manrope', ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
 }
 
 *, *::before, *::after {
@@ -25,7 +10,9 @@
 
 body {
   margin: 0;
-  font-family: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  font-family: 'Manrope', ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  letter-spacing: -0.005em;
 }
+</content>

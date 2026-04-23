@@ -54,3 +54,6 @@ Untitled form.csv
 # Misc
 mirror3d.py
 pose_landmarker.task
+
+# GitHub token (do not commit)
+gh_token.txt
