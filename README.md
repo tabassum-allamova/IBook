@@ -45,57 +45,84 @@ automatically on first run), and the Vite frontend. Once the logs settle:
 Stop with `Ctrl+C`, or clear everything with `docker compose down -v` (the `-v`
 also wipes the database volume so the next run re-seeds).
 
-### Manual setup
+### Manual setup (no Docker)
+
+Run the backend and frontend in **two separate terminals**. Defaults use SQLite,
+so no Postgres install is required.
 
 #### Prerequisites
 
 - Python 3.11+
-- Node.js 18+
-- npm
+- Node.js 18+ and npm
 
-#### Backend
+#### Terminal 1 — Backend (Django on port 8000)
 
 ```bash
 cd backend
+
+# 1. Create and activate a virtualenv
 python -m venv venv
-source venv/bin/activate  # on Windows: venv\Scripts\activate
+source venv/bin/activate            # Windows: venv\Scripts\activate
+
+# 2. Install Python dependencies
 pip install -r requirements.txt
+
+# 3. Apply migrations
 python manage.py migrate
-python manage.py seed_test_users  # creates test accounts
-python manage.py seed_demo         # populates demo data (shops, barbers, appointments, reviews)
+
+# 4. Seed demo data (10 shops, barbers, appointments, reviews, photos)
+#    Skip this if you want an empty DB.
+python manage.py seed_demo
+
+# 5. Start the API server
 python manage.py runserver
 ```
 
-Backend runs at http://localhost:8000
+Backend is now serving at **http://localhost:8000**.
 
-#### Frontend
+#### Terminal 2 — Frontend (Vite on port 5173)
 
 ```bash
 cd frontend
+
+# 1. Tell Vite where the backend is (default points to the docker port 8001)
+echo "VITE_BACKEND_URL=http://localhost:8000" > .env.local
+
+# 2. Install Node dependencies
 npm install
+
+# 3. Start the dev server
 npm run dev
 ```
 
-Frontend runs at http://localhost:5173
+Open **http://localhost:5173** in your browser.
 
-#### Environment Variables
+#### Optional env vars
 
-Create `backend/.env`:
+`backend/.env` (only if you want to override defaults):
+
 ```
-SECRET_KEY=your-secret-key
+SECRET_KEY=change-me
 DEBUG=True
 ALLOWED_HOSTS=localhost,127.0.0.1
 CORS_ALLOWED_ORIGINS=http://localhost:5173
-STRIPE_SECRET_KEY=sk_test_...      # optional, for online payments
-STRIPE_PUBLISHABLE_KEY=pk_test_... # optional
+STRIPE_SECRET_KEY=sk_test_...        # optional, for online payments
+STRIPE_PUBLISHABLE_KEY=pk_test_...   # optional
 ```
 
-Create `frontend/.env`:
+`frontend/.env.local`:
+
 ```
-VITE_STRIPE_PUBLISHABLE_KEY=pk_test_...  # optional
+VITE_BACKEND_URL=http://localhost:8000
+VITE_STRIPE_PUBLISHABLE_KEY=pk_test_...   # optional
 ```
 
-Stripe keys are optional - the app works without them (just use "Pay at Shop" option).
+Stripe keys are optional — the app works without them (just use "Pay at Shop").
+
+#### Stop everything
+
+In each terminal: `Ctrl+C`. Backend SQLite data lives in `backend/db.sqlite3`;
+delete that file to start fresh.
 
 #### Demo Accounts
 
