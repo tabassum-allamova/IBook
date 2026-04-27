@@ -17,12 +17,16 @@ export default defineConfig({
   server: {
     host: '0.0.0.0',
     proxy: {
+      // changeOrigin stays false so Django sees the browser's Host header,
+      // and build_absolute_uri() produces URLs the browser can actually fetch.
+      // /media must be proxied so image URLs returned by the API resolve here.
       '/api': {
-        // Backend URL resolves in this order:
-        //   1. VITE_BACKEND_URL env (Docker sets this to http://backend:8000)
-        //   2. local dev fallback
         target: process.env.VITE_BACKEND_URL || 'http://localhost:8001',
-        changeOrigin: true,
+        changeOrigin: false,
+      },
+      '/media': {
+        target: process.env.VITE_BACKEND_URL || 'http://localhost:8001',
+        changeOrigin: false,
       },
     },
   },

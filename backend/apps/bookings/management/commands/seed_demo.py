@@ -224,6 +224,28 @@ CUSTOMER_NAMES = [
     ("Xurshid", "Yusupov"),
 ]
 
+# Independent barbers — no shop affiliation, appear on the map via lat/lng
+# and in the "Solo Barbers" directory section. Coordinates are spread across
+# Tashkent districts so they don't overlap shop pins.
+SOLO_BARBER_DATA = [
+    {"first": "Akmal",  "last": "Yusupov",   "lat": "41.327000", "lng": "69.281000",
+     "bio": "Mustaqil sartarosh, uy va ofislarga xizmat ko'rsataman. 8 yillik tajriba."},
+    {"first": "Ravshan", "last": "Saidov",   "lat": "41.301000", "lng": "69.265000",
+     "bio": "Mobil sartaroshlik xizmati. Soqol va soch kesish bo'yicha mutaxassis."},
+    {"first": "Sanjar",  "last": "Komilov",  "lat": "41.355000", "lng": "69.310000",
+     "bio": "Klassik va zamonaviy soch turmagi. Mijoz uyiga keladi."},
+    {"first": "Behzod",  "last": "Aliyev",   "lat": "41.275000", "lng": "69.215000",
+     "bio": "Premium uy xizmatlari, fade va beard styling bo'yicha ishonchli usta."},
+    {"first": "Murod",   "last": "Tashkenov","lat": "41.290000", "lng": "69.340000",
+     "bio": "10 yildan ortiq tajribali mustaqil sartarosh. Onlayn band qilish mumkin."},
+    {"first": "Doston",  "last": "Hakimov",  "lat": "41.320000", "lng": "69.225000",
+     "bio": "Bolalar va kattalar uchun soch kesish. Mahallangizga keladi."},
+    {"first": "Ilyos",   "last": "Karimov",  "lat": "41.260000", "lng": "69.295000",
+     "bio": "Nikoh va tantanalar oldidan soch turmagi. Uy ofis xizmati."},
+    {"first": "Otabek",  "last": "Niyozov",  "lat": "41.345000", "lng": "69.255000",
+     "bio": "Skin fade, taper va beard trim bo'yicha mutaxassis. Mobil xizmat."},
+]
+
 SERVICE_TEMPLATES = [
     {"name": "Haircut",          "price_range": (40000, 70000),   "duration": 30},
     {"name": "Beard Trim",       "price_range": (25000, 45000),   "duration": 15},
@@ -291,7 +313,9 @@ class Command(BaseCommand):
         # Cover any shop in the DB, not only the demo ones — some may have been
         # created manually via admin or the app UI.
         self._seed_shop_photos(list(Shop.objects.all()))
-        barbers = self._seed_barbers(shops)
+        shop_barbers = self._seed_barbers(shops)
+        solo_barbers = self._seed_solo_barbers()
+        barbers = shop_barbers + solo_barbers
         barber_services = self._seed_services(barbers)
         self._seed_weekly_schedules(barbers)
         customers = self._seed_customers()
@@ -299,9 +323,9 @@ class Command(BaseCommand):
         self._seed_reviews(appointments)
 
         self.stdout.write(self.style.SUCCESS(
-            f"\nSeeded: {len(shops)} shops, {len(barbers)} barbers, "
-            f"{len(customers)} customers, {appointments} appointments, "
-            f"reviews created for ~80% of appointments\n"
+            f"\nSeeded: {len(shops)} shops, {len(shop_barbers)} shop barbers, "
+            f"{len(solo_barbers)} solo barbers, {len(customers)} customers, "
+            f"{appointments} appointments, reviews created for ~80% of appointments\n"
         ))
 
     def _seed_owners(self):
@@ -364,29 +388,58 @@ class Command(BaseCommand):
 
         self.stdout.write(f"  ShopHours: {count} rows ready")
 
+    # Curated barbershop photos hosted on the Unsplash CDN.
+    # LoremFlickr / Picsum were both replaced with "slop.jop" placeholder
+    # images, so we hit Unsplash's image CDN directly with known photo IDs.
+    BARBERSHOP_PHOTO_IDS = (
+        "1503951914875-452162b0f3f1",
+        "1521590832167-7bcbfaa6381f",
+        "1622286342621-4bd786c2447c",
+        "1599351431202-1e0f0137899a",
+        "1567894340315-735d7c361db0",
+        "1585747860715-2ba37e788b70",
+        "1493256338651-d82f7acb2b38",
+        "1517832606299-7ae9b720a186",
+        "1605497788044-5a32c7078486",
+        "1506634572416-48cdfe530110",
+        "1580618672591-eb180b1a973f",
+    )
+
+    # Square-ish portraits for solo-barber avatars. Cropped to 600x600.
+    BARBER_PORTRAIT_IDS = (
+        "1500648767791-00dcc994a43e",
+        "1507003211169-0a1dd7228f2d",
+        "1531427186611-ecfd6d936c79",
+        "1492562080023-ab3db95bfbce",
+        "1519085360753-af0119f7cbe7",
+        "1564564321837-a57b7070ac4f",
+        "1599566150163-29194dcaad36",
+        "1463453091185-61582044d556",
+    )
+
     def _seed_shop_photos(self, shops):
         """
-        Download barbershop photos from LoremFlickr (Flickr-sourced,
-        keyword-tagged) and save them as ShopPhoto rows.
+        Download barbershop photos from the Unsplash CDN and save them as
+        ShopPhoto rows. Photos are picked from a curated, deterministic list
+        keyed off shop id + photo index so re-runs are stable.
 
         Idempotent: shops that already have any photo are skipped.
         """
         photos_per_shop = 3
-        keywords = "barbershop,haircut,salon"
         width, height = 1200, 900
         total_created = 0
         total_failed = 0
+        ids = self.BARBERSHOP_PHOTO_IDS
 
         for shop in shops:
             if shop.photos.exists():
                 continue
 
             for n in range(1, photos_per_shop + 1):
-                # Stable, per-shop-per-index seed → same image each re-run
-                lock = shop.id * 10 + n
+                photo_id = ids[(shop.id * photos_per_shop + n) % len(ids)]
                 url = (
-                    f"https://loremflickr.com/{width}/{height}/"
-                    f"{keywords}?lock={lock}"
+                    f"https://images.unsplash.com/photo-{photo_id}"
+                    f"?w={width}&h={height}&fit=crop&q=80"
                 )
                 data = self._download_image(url)
                 if data is None:
@@ -398,8 +451,7 @@ class Command(BaseCommand):
                 photo.image.save(filename, ContentFile(data), save=True)
                 total_created += 1
 
-                # Be polite to the free service
-                time_module.sleep(0.3)
+                time_module.sleep(0.2)
 
         if total_failed:
             self.stdout.write(
@@ -413,7 +465,7 @@ class Command(BaseCommand):
         try:
             req = urllib.request.Request(
                 url,
-                headers={"User-Agent": "IBook-seed/1.0"},
+                headers={"User-Agent": "Mozilla/5.0 (compatible; IBook-seed/1.0)"},
             )
             with urllib.request.urlopen(req, timeout=20) as resp:
                 return resp.read()
@@ -463,6 +515,67 @@ class Command(BaseCommand):
 
         self.stdout.write(f"  Barbers:   {len(barbers)} ready")
         return barbers
+
+    def _seed_solo_barbers(self):
+        """
+        Seed independent (solo) barbers — role=BARBER with no shop membership.
+        Each gets coordinates, a short bio, and an avatar so they show up in
+        the customer "Solo Barbers" directory and on the explore map.
+
+        Idempotent: existing users with the same email are reused.
+        """
+        portrait_ids = self.BARBER_PORTRAIT_IDS
+        solo = []
+
+        for i, data in enumerate(SOLO_BARBER_DATA, start=1):
+            email = f"solo_barber{i}@ibook.demo"
+            barber, created = CustomUser.objects.get_or_create(
+                email=email,
+                defaults={
+                    "username": email,
+                    "first_name": data["first"],
+                    "last_name": data["last"],
+                    "role": CustomUser.Role.BARBER,
+                    "is_active": True,
+                    "is_email_verified": True,
+                    "years_of_experience": random.randint(3, 14),
+                    "lat": data["lat"],
+                    "lng": data["lng"],
+                    "bio": data["bio"],
+                },
+            )
+            if created:
+                barber.set_password("demo1234")
+                barber.save()
+
+            # Backfill coords/bio/avatar on existing rows that pre-date these
+            # fields, but never overwrite an avatar the user already uploaded.
+            updates = {}
+            if not barber.lat:
+                updates["lat"] = data["lat"]
+            if not barber.lng:
+                updates["lng"] = data["lng"]
+            if not barber.bio:
+                updates["bio"] = data["bio"]
+            if updates:
+                CustomUser.objects.filter(pk=barber.pk).update(**updates)
+
+            if not barber.avatar:
+                portrait_id = portrait_ids[(i - 1) % len(portrait_ids)]
+                url = (
+                    f"https://images.unsplash.com/photo-{portrait_id}"
+                    "?w=600&h=600&fit=crop&q=80"
+                )
+                data_bytes = self._download_image(url)
+                if data_bytes is not None:
+                    filename = f"solo-{slugify(data['first'])}-{slugify(data['last'])}.jpg"
+                    barber.avatar.save(filename, ContentFile(data_bytes), save=True)
+                    time_module.sleep(0.2)
+
+            solo.append((barber, None))
+
+        self.stdout.write(f"  Solo barbers: {len(solo)} ready")
+        return solo
 
     def _seed_services(self, barbers):
         barber_services = {}
