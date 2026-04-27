@@ -52,11 +52,29 @@ const { data: barber } = useQuery<BarberMeta>({
   enabled: computed(() => !isNaN(barberIdNum.value)),
 })
 
+// When STRIPE_SECRET_KEY isn't configured on the backend, hide the "Pay
+// Online" option so the user never gets a 503 mid-checkout.
+const { data: paymentConfig } = useQuery<{ stripe_enabled: boolean }>({
+  queryKey: ['payment-config'],
+  queryFn: async () => {
+    const res = await api.get<{ stripe_enabled: boolean }>('/api/bookings/payment-config/')
+    return res.data
+  },
+  staleTime: 5 * 60 * 1000,
+})
+const stripeEnabled = computed(() => paymentConfig.value?.stripe_enabled ?? false)
+
 const step = ref(1)
 const selectedServices = ref<Service[]>([])
 const selectedDate = ref(new Date().toISOString().split('T')[0])
 const selectedSlot = ref('')
-const paymentMethod = ref<'ONLINE' | 'AT_SHOP'>('ONLINE')
+const paymentMethod = ref<'ONLINE' | 'AT_SHOP'>('AT_SHOP')
+
+// Default to ONLINE only once we know Stripe is configured. Otherwise stay
+// on AT_SHOP and hide the ONLINE radio in the template.
+watch(stripeEnabled, (enabled) => {
+  if (enabled && step.value < 3) paymentMethod.value = 'ONLINE'
+}, { immediate: true })
 const bookingResult = ref<AppointmentResult | null>(null)
 const paymentError = ref('')
 const isStartingCheckout = ref(false)
@@ -443,8 +461,9 @@ function formatDateLabel(iso: string): string {
               </p>
 
               <!-- Payment method -->
-              <div class="grid sm:grid-cols-2 gap-3 mb-6">
+              <div :class="stripeEnabled ? 'grid sm:grid-cols-2 gap-3 mb-6' : 'grid grid-cols-1 gap-3 mb-6'">
                 <label
+                  v-if="stripeEnabled"
                   class="relative flex items-start gap-3 p-4 rounded-xl border cursor-pointer transition-colors bg-white"
                   :class="
                     paymentMethod === 'ONLINE'

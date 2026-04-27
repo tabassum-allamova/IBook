@@ -597,6 +597,20 @@ class AppointmentNoShowView(APIView):
         return Response(AppointmentSerializer(appointment).data)
 
 
+class PaymentConfigView(APIView):
+    """
+    Public endpoint that tells the frontend whether online payment is wired up.
+    The frontend uses this to hide the "Pay Online" option entirely when
+    STRIPE_SECRET_KEY isn't set, so users don't get a 503 mid-booking.
+    """
+    permission_classes = [AllowAny]
+
+    def get(self, request):
+        return Response({
+            'stripe_enabled': bool(django_settings.STRIPE_SECRET_KEY),
+        })
+
+
 class CreateCheckoutSessionView(APIView):
     permission_classes = [IsCustomer]
 

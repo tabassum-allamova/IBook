@@ -13,6 +13,7 @@ from apps.bookings.views import (
     CreateCheckoutSessionView,
     CustomerAppointmentListView,
     FinalizeCheckoutSessionView,
+    PaymentConfigView,
     StripeWebhookView,
 )
 
@@ -21,6 +22,7 @@ urlpatterns = [
     path('slots/', AvailableSlotsView.as_view(), name='available-slots'),
     path('analytics/barber/', BarberAnalyticsView.as_view(), name='barber-analytics'),
     path('analytics/owner/', OwnerAnalyticsView.as_view(), name='owner-analytics'),
+    path('payment-config/', PaymentConfigView.as_view(), name='payment-config'),
     path('create-checkout-session/', CreateCheckoutSessionView.as_view(), name='create-checkout-session'),
     path('finalize-checkout-session/', FinalizeCheckoutSessionView.as_view(), name='finalize-checkout-session'),
     path('stripe-webhook/', StripeWebhookView.as_view(), name='stripe-webhook'),
