@@ -32,8 +32,11 @@ def _send_verification_email(user: CustomUser) -> None:
     import threading
 
     token = _signer.sign(user.pk)
-    base_url = getattr(settings, 'BACKEND_URL', None) or 'http://localhost:8000'
-    verify_url = f"{base_url.rstrip('/')}/api/auth/verify-email/?token={token}"
+    # Point the email at the frontend so the user lands inside the app (not on
+    # the bare backend JSON response). The frontend page calls the API to
+    # complete verification and then routes to /login?verified=true.
+    frontend_url = getattr(settings, 'FRONTEND_URL', None) or 'http://localhost:5173'
+    verify_url = f"{frontend_url.rstrip('/')}/verify-email?token={token}"
 
     def _send():
         send_mail(
@@ -120,8 +123,9 @@ class VerifyEmailView(APIView):
         user.is_active = True
         user.is_email_verified = True
         user.save(update_fields=["is_active", "is_email_verified"])
-        from django.shortcuts import redirect
-        return redirect(f"{settings.FRONTEND_URL}/login?verified=true")
+        # The frontend /verify-email page consumes this response and shows
+        # success / error inline before sending the user to the login screen.
+        return Response({"detail": "Email verified."}, status=status.HTTP_200_OK)
 
 
 class LoginView(APIView):

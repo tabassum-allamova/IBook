@@ -27,6 +27,11 @@ const routes: RouteRecordRaw[] = [
     component: () => import('@/views/RegisterProfessionalPage.vue'),
     meta: { guest: true },
   },
+  {
+    path: '/verify-email',
+    name: 'verify-email',
+    component: () => import('@/views/VerifyEmailPage.vue'),
+  },
 
   // Customer routes
   {
