@@ -64,9 +64,19 @@ const { data: paymentConfig } = useQuery<{ stripe_enabled: boolean }>({
 })
 const stripeEnabled = computed(() => paymentConfig.value?.stripe_enabled ?? false)
 
+// Format a Date as YYYY-MM-DD in local time so the initial selection matches
+// what the DateScroller emits (UTC-based ISO can be off by one day in
+// non-UTC timezones).
+function toLocalIso(d: Date): string {
+  const y = d.getFullYear()
+  const m = String(d.getMonth() + 1).padStart(2, '0')
+  const day = String(d.getDate()).padStart(2, '0')
+  return `${y}-${m}-${day}`
+}
+
 const step = ref(1)
 const selectedServices = ref<Service[]>([])
-const selectedDate = ref(new Date().toISOString().split('T')[0])
+const selectedDate = ref(toLocalIso(new Date()))
 const selectedSlot = ref('')
 const paymentMethod = ref<'ONLINE' | 'AT_SHOP'>('AT_SHOP')
 

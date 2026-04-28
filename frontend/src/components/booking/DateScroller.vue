@@ -18,6 +18,16 @@ interface DateEntry {
   isFirstOfMonth: boolean
 }
 
+// Format a Date as YYYY-MM-DD in local time. Using toISOString() here would
+// return the UTC date, which can be off by one day vs. the day number we
+// display on the tile (e.g. 1am Tashkent local = 8pm UTC the previous day).
+function toLocalIso(d: Date): string {
+  const y = d.getFullYear()
+  const m = String(d.getMonth() + 1).padStart(2, '0')
+  const day = String(d.getDate()).padStart(2, '0')
+  return `${y}-${m}-${day}`
+}
+
 const dates = computed<DateEntry[]>(() => {
   const result: DateEntry[] = []
   const today = new Date()
@@ -27,7 +37,7 @@ const dates = computed<DateEntry[]>(() => {
     const prev = result[result.length - 1]
     const monthShort = d.toLocaleDateString('en-US', { month: 'short' })
     result.push({
-      iso: d.toISOString().split('T')[0],
+      iso: toLocalIso(d),
       dayName: d.toLocaleDateString('en-US', { weekday: 'short' }),
       dayNum: d.getDate(),
       month: monthShort,
