@@ -143,9 +143,10 @@ async function handleSubmit() {
       await uploadPhotosMutation.mutateAsync({ shopId, files: shopForm.photos })
     }
 
-    // Success — redirect to shop management page
+    // Success — shop management page was removed; send the owner to their
+    // dashboard instead.
     toast.success('Shop created successfully!')
-    router.push('/owner/shop')
+    router.push('/owner/overview')
   } catch (err: unknown) {
     const axiosErr = err as { response?: { data?: { detail?: string } } }
     submitError.value =

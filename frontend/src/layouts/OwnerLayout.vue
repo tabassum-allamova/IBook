@@ -8,7 +8,6 @@ const { t } = useI18n()
 
 const navItems = computed(() => [
   { label: t('nav.overview'), to: '/owner/overview' },
-  { label: t('nav.shops'), to: '/owner/shop' },
   { label: t('nav.barbers'), to: '/owner/barbers' },
   { label: t('nav.analytics'), to: '/owner/analytics' },
   { label: t('nav.settings'), to: '/owner/settings' },
@@ -16,7 +15,6 @@ const navItems = computed(() => [
 
 const mobileNavItems = computed(() => [
   { label: t('nav.overview'), to: '/owner/overview', icon: 'analytics' },
-  { label: t('nav.shops'), to: '/owner/shop', icon: 'shop' },
   { label: t('nav.analytics'), to: '/owner/analytics', icon: 'analytics' },
   { label: t('nav.settings'), to: '/owner/settings', icon: 'settings' },
 ])

@@ -146,12 +146,6 @@ const routes: RouteRecordRaw[] = [
     meta: { requiresAuth: true, role: 'SHOP_OWNER' as UserRole },
   },
   {
-    path: '/owner/shop',
-    name: 'owner-shop',
-    component: () => import('@/views/owner/ShopManagePage.vue'),
-    meta: { requiresAuth: true, role: 'SHOP_OWNER' as UserRole },
-  },
-  {
     path: '/owner/barbers',
     name: 'owner-barbers',
     component: () => import('@/views/owner/BarbersPage.vue'),
