@@ -307,6 +307,7 @@ class Command(BaseCommand):
 
         random.seed(42)  # reproducible across re-runs
 
+        self._seed_admin()
         owners = self._seed_owners()
         shops = self._seed_shops(owners)
         self._seed_shop_hours(shops)
@@ -327,6 +328,32 @@ class Command(BaseCommand):
             f"{len(solo_barbers)} solo barbers, {len(customers)} customers, "
             f"{appointments} appointments, reviews created for ~80% of appointments\n"
         ))
+
+    def _seed_admin(self):
+        email = "admin@ibook.demo"
+        admin, created = CustomUser.objects.get_or_create(
+            email=email,
+            defaults={
+                "username": email,
+                "first_name": "Site",
+                "last_name": "Admin",
+                "role": CustomUser.Role.SHOP_OWNER,
+                "is_active": True,
+                "is_email_verified": True,
+                "is_staff": True,
+                "is_superuser": True,
+            },
+        )
+        if created:
+            admin.set_password("admin1234")
+            admin.save()
+        else:
+            admin.is_staff = True
+            admin.is_superuser = True
+            admin.is_active = True
+            admin.set_password("admin1234")
+            admin.save()
+        self.stdout.write(f"  Admin:     {email} / admin1234")
 
     def _seed_owners(self):
         owners = []
