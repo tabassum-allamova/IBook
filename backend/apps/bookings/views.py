@@ -727,7 +727,10 @@ class FinalizeCheckoutSessionView(APIView):
                 status=status.HTTP_402_PAYMENT_REQUIRED,
             )
 
-        meta = session.metadata or {}
+        # session.metadata is a StripeObject, not a plain dict — calling .get()
+        # on it raises AttributeError because StripeObject's __getattr__ does
+        # key-lookup. dict() converts it to a real dict so .get() behaves.
+        meta = dict(session.metadata) if session.metadata else {}
         try:
             appointment_id = int(meta.get('appointment_id') or 0)
             meta_user_id = int(meta.get('user_id') or 0)
@@ -804,7 +807,10 @@ class StripeWebhookView(APIView):
             return Response(status=200)
 
         data = event['data']['object'] if isinstance(event, dict) else event.data.object
-        metadata = (data.get('metadata') or {}) if isinstance(data, dict) else (data.metadata or {})
+        # Coerce StripeObject → dict; StripeObject.__getattr__ does key-lookup,
+        # which means raw_metadata.get(...) raises AttributeError.
+        raw_metadata = (data.get('metadata') if isinstance(data, dict) else data.metadata) or {}
+        metadata = dict(raw_metadata) if not isinstance(raw_metadata, dict) else raw_metadata
         payment_status = data.get('payment_status') if isinstance(data, dict) else data.payment_status
         try:
             appointment_id = int(metadata.get('appointment_id') or 0)
