@@ -727,13 +727,16 @@ class FinalizeCheckoutSessionView(APIView):
                 status=status.HTTP_402_PAYMENT_REQUIRED,
             )
 
-        # session.metadata is a StripeObject, not a plain dict — calling .get()
-        # on it raises AttributeError because StripeObject's __getattr__ does
-        # key-lookup. dict() converts it to a real dict so .get() behaves.
-        meta = dict(session.metadata) if session.metadata else {}
+        # session.metadata is a StripeObject. Don't .get() it (raises
+        # AttributeError) and don't dict() it (raises KeyError on some SDK
+        # versions whose __iter__ yields indices). getattr with a default
+        # works across versions for known keys.
+        md = session.metadata
+        appointment_id_raw = getattr(md, 'appointment_id', None) if md else None
+        meta_user_id_raw = getattr(md, 'user_id', None) if md else None
         try:
-            appointment_id = int(meta.get('appointment_id') or 0)
-            meta_user_id = int(meta.get('user_id') or 0)
+            appointment_id = int(appointment_id_raw or 0)
+            meta_user_id = int(meta_user_id_raw or 0)
         except (ValueError, TypeError):
             appointment_id = 0
             meta_user_id = 0
@@ -807,14 +810,20 @@ class StripeWebhookView(APIView):
             return Response(status=200)
 
         data = event['data']['object'] if isinstance(event, dict) else event.data.object
-        # Coerce StripeObject → dict; StripeObject.__getattr__ does key-lookup,
-        # which means raw_metadata.get(...) raises AttributeError.
-        raw_metadata = (data.get('metadata') if isinstance(data, dict) else data.metadata) or {}
-        metadata = dict(raw_metadata) if not isinstance(raw_metadata, dict) else raw_metadata
-        payment_status = data.get('payment_status') if isinstance(data, dict) else data.payment_status
+        if isinstance(data, dict):
+            md = data.get('metadata') or {}
+            appointment_id_raw = md.get('appointment_id')
+            meta_user_id_raw = md.get('user_id')
+            payment_status = data.get('payment_status')
+        else:
+            md = data.metadata
+            # Avoid .get() / dict() on StripeObject — see FinalizeCheckoutSessionView.
+            appointment_id_raw = getattr(md, 'appointment_id', None) if md else None
+            meta_user_id_raw = getattr(md, 'user_id', None) if md else None
+            payment_status = data.payment_status
         try:
-            appointment_id = int(metadata.get('appointment_id') or 0)
-            meta_user_id = int(metadata.get('user_id') or 0)
+            appointment_id = int(appointment_id_raw or 0)
+            meta_user_id = int(meta_user_id_raw or 0)
         except (ValueError, TypeError):
             return Response(status=400)
 
